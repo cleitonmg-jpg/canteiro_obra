@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model tb_empresa {
+  id                    Int       @id @default(autoincrement())
+  nome                  String    @db.VarChar(200)
+  endereco              String?
+  cnpj                  String    @unique @db.VarChar(14)
+  telefone              String?   @db.VarChar(20)
+  email                 String?   @db.VarChar(100)
+  data_cadastro         DateTime? @default(now())
+  observacao            String?
+  banco_dados_vinculado String?   @db.VarChar(50)
+}
+
+model tb_usuario {
+  id              Int       @id @default(autoincrement())
+  nome            String    @db.VarChar(100)
+  email           String    @unique @db.VarChar(100)
+  senha           String    @db.VarChar(255)
+  nivel_permissao String?   @default("OPERADOR") @db.VarChar(20)
+  ativo           Boolean?  @default(true)
+  data_cadastro   DateTime? @default(now())
+
+  tb_movimentacao_obra tb_movimentacao_obra[]
+}
+
+model tb_grupo {
+  id                 Int                  @id @default(autoincrement())
+  codigo             String?              @db.VarChar(20)
+  descricao          String               @db.VarChar(100)
+  tb_produto_servico tb_produto_servico[]
+}
+
+model tb_produto_servico {
+  id             Int       @id @default(autoincrement())
+  codigo_interno String?   @db.VarChar(50)
+  tipo           String?   @default("PRODUTO") @db.VarChar(10)
+  descricao      String    @db.VarChar(200)
+  unidade_medida String?   @db.VarChar(10)
+  preco_custo    Decimal?  @default(0) @db.Decimal(15, 2)
+  id_grupo       Int?
+  ativo          Boolean?  @default(true)
+  data_cadastro  DateTime? @default(now())
+
+  tb_grupo             tb_grupo?              @relation(fields: [id_grupo], references: [id])
+  tb_movimentacao_obra tb_movimentacao_obra[]
+}
+
+model tb_obra {
+  id                Int       @id @default(autoincrement())
+  nome              String    @db.VarChar(200)
+  endereco          String?
+  data_inicio       DateTime? @db.Date
+  data_termino      DateTime? @db.Date
+  responsavel       String?   @db.VarChar(100)
+  status            String?   @default("ATIVA") @db.VarChar(20)
+  valor_contratado  Decimal?  @default(0) @db.Decimal(15, 2)
+  numero_licitacao  String?   @db.VarChar(50)
+  orgao_responsavel String?   @db.VarChar(100)
+  tipo_orgao        String?   @db.VarChar(20)
+  data_cadastro     DateTime? @default(now())
+
+  tb_movimentacao_obra tb_movimentacao_obra[]
+}
+
+model tb_movimentacao_obra {
+  id                   Int       @id @default(autoincrement())
+  id_obra              Int?
+  id_produto_servico   Int?
+  quantidade           Decimal?  @default(0) @db.Decimal(15, 4)
+  preco_custo_aplicado Decimal?  @default(0) @db.Decimal(15, 2)
+  total_calculado      Decimal?  @default(0) @db.Decimal(15, 2)
+  data_movimentacao    DateTime? @default(now())
+  id_usuario_registro  Int?
+
+  tb_obra            tb_obra?            @relation(fields: [id_obra], references: [id])
+  tb_produto_servico tb_produto_servico? @relation(fields: [id_produto_servico], references: [id])
+  tb_usuario         tb_usuario?         @relation(fields: [id_usuario_registro], references: [id])
+}
+
+model tb_auditoria {
+  id                  Int       @id @default(autoincrement())
+  id_usuario          Int?
+  tipo_operacao       String?   @db.VarChar(20)
+  tabela_afetada      String?   @db.VarChar(50)
+  id_registro_afetado Int?
+  dados_anteriores    String?   // Changed Json to String? since postgres might not have JSON setup or string is safer
+  dados_novos         String?   
+  data_hora           DateTime? @default(now())
+}
