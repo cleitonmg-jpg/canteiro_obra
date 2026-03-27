@@ -47,6 +47,23 @@ const gerarCodigoProduto = async (tipo) => {
 app.get('/api/health', (_req, res) => res.json({ message: 'Backend Canteiro de Obras Ativo', developer: 'V9 INFORMÁTICA LTDA - (37) 4141-0341', status: 'ONLINE' }));
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════════════════════════════
+app.post('/api/login', async (req, res) => {
+  try {
+    const { login, senha } = req.body;
+    if (!login?.trim() || !senha?.trim()) return res.status(400).json({ erro: 'Usuário e senha obrigatórios' });
+    const usuario = await prisma.tb_usuario.findFirst({
+      where: { login: login.trim().toLowerCase(), ativo: true },
+      select: { id: true, nome: true, login: true, nivel_permissao: true, senha: true },
+    });
+    if (!usuario || usuario.senha !== senha.trim()) return res.status(401).json({ erro: 'Usuário ou senha inválidos' });
+    const { senha: _, ...dados } = usuario;
+    res.json(dados);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // EMPRESA (registro único)
 // ═══════════════════════════════════════════════════════════════════════════════
 app.get('/api/empresa', async (_req, res) => {
@@ -355,7 +372,7 @@ app.delete('/api/lancamentos/:id', async (req, res) => {
 app.get('/api/usuarios', async (_req, res) => {
   try {
     res.json(await prisma.tb_usuario.findMany({
-      select: { id: true, nome: true, email: true, nivel_permissao: true, ativo: true, data_cadastro: true },
+      select: { id: true, nome: true, login: true, email: true, nivel_permissao: true, ativo: true, data_cadastro: true },
       orderBy: { nome: 'asc' },
     }));
   } catch (err) { res.status(500).json({ erro: err.message }); }
@@ -363,26 +380,26 @@ app.get('/api/usuarios', async (_req, res) => {
 
 app.post('/api/usuarios', async (req, res) => {
   try {
-    const { nome, email, senha, nivel_permissao } = req.body;
-    if (!nome?.trim() || !senha?.trim()) return res.status(400).json({ erro: 'Nome e senha são obrigatórios' });
+    const { nome, login, email, senha, nivel_permissao } = req.body;
+    if (!nome?.trim() || !login?.trim() || !senha?.trim()) return res.status(400).json({ erro: 'Nome, usuário e senha são obrigatórios' });
     res.status(201).json(await prisma.tb_usuario.create({
-      data: { nome: nome.trim(), email: email?.trim() ? email.trim().toLowerCase() : null, senha, nivel_permissao: nivel_permissao || 'OPERADOR', ativo: true },
-      select: { id: true, nome: true, email: true, nivel_permissao: true, ativo: true, data_cadastro: true },
+      data: { nome: nome.trim(), login: login.trim().toLowerCase(), email: email?.trim() ? email.trim().toLowerCase() : null, senha, nivel_permissao: nivel_permissao || 'OPERADOR', ativo: true },
+      select: { id: true, nome: true, login: true, email: true, nivel_permissao: true, ativo: true, data_cadastro: true },
     }));
   } catch (err) {
-    if (err.code === 'P2002') return res.status(400).json({ erro: 'E-mail já cadastrado' });
+    if (err.code === 'P2002') return res.status(400).json({ erro: 'Usuário ou e-mail já cadastrado' });
     res.status(500).json({ erro: err.message });
   }
 });
 
 app.put('/api/usuarios/:id', async (req, res) => {
   try {
-    const { nome, email, nivel_permissao, ativo, senha } = req.body;
-    const data = { nome: nome?.trim(), email: email?.trim() ? email.trim().toLowerCase() : null, nivel_permissao, ativo };
+    const { nome, login, email, nivel_permissao, ativo, senha } = req.body;
+    const data = { nome: nome?.trim(), login: login?.trim().toLowerCase(), email: email?.trim() ? email.trim().toLowerCase() : null, nivel_permissao, ativo };
     if (senha?.trim()) data.senha = senha.trim();
     res.json(await prisma.tb_usuario.update({
       where: { id: parseInt(req.params.id) }, data,
-      select: { id: true, nome: true, email: true, nivel_permissao: true, ativo: true, data_cadastro: true },
+      select: { id: true, nome: true, login: true, email: true, nivel_permissao: true, ativo: true, data_cadastro: true },
     }));
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });

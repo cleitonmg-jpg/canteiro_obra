@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Lock, ArrowRight, Construction } from 'lucide-react';
 import { useEmpresaNome } from '../hooks/useEmpresaNome';
+import { API } from '../config';
 
 const LoginPage: React.FC = () => {
     const navigate = useNavigate();
@@ -9,20 +10,41 @@ const LoginPage: React.FC = () => {
     const [login, setLogin] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [carregando, setCarregando] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        // Regra Global 3.7: Usuário Master
+        // Usuário master fixo (acesso de emergência)
         if (login.toLowerCase() === 'master' && password === 'Belvedere640@') {
-            
-            // Simular login bem sucedido
             localStorage.setItem('user_role', 'MASTER');
             localStorage.setItem('user_name', 'Master Admin');
             navigate('/dashboard');
-        } else {
-            setError('Credenciais inválidas para esta empresa.');
+            return;
+        }
+
+        setCarregando(true);
+        try {
+            const res = await fetch(`${API}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ login, senha: password }),
+            });
+            if (!res.ok) {
+                const d = await res.json();
+                setError(d.erro || 'Usuário ou senha inválidos.');
+                return;
+            }
+            const user = await res.json();
+            localStorage.setItem('user_role', user.nivel_permissao);
+            localStorage.setItem('user_name', user.nome);
+            localStorage.setItem('user_login', user.login);
+            navigate('/dashboard');
+        } catch {
+            setError('Não foi possível conectar ao servidor.');
+        } finally {
+            setCarregando(false);
         }
     };
 
@@ -86,12 +108,13 @@ const LoginPage: React.FC = () => {
                         </div>
 
                         {/* Botão Entrar */}
-                        <button 
-                            type="submit" 
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-black text-lg shadow-lg shadow-blue-100 flex items-center justify-center gap-2 transform active:scale-95 transition-all group"
+                        <button
+                            type="submit"
+                            disabled={carregando}
+                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white py-4 rounded-xl font-black text-lg shadow-lg shadow-blue-100 flex items-center justify-center gap-2 transform active:scale-95 transition-all group"
                         >
-                            ENTRAR NO SISTEMA
-                            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                            {carregando ? 'VERIFICANDO...' : 'ENTRAR NO SISTEMA'}
+                            {!carregando && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
                         </button>
                     </form>
                 </div>

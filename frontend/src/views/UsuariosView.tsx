@@ -6,7 +6,8 @@ import { API } from '../config';
 interface Usuario {
     id: number;
     nome: string;
-    email: string;
+    login: string;
+    email?: string;
     nivel_permissao: string;
     ativo: boolean;
     data_cadastro?: string;
@@ -26,6 +27,7 @@ export const UsuariosView = () => {
 
     const [editId, setEditId] = useState<number | null>(null);
     const [nome, setNome] = useState('');
+    const [loginUsuario, setLoginUsuario] = useState('');
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [nivel, setNivel] = useState('OPERADOR');
@@ -43,7 +45,7 @@ export const UsuariosView = () => {
     useEffect(() => { carregar(); }, []);
 
     const resetForm = () => {
-        setEditId(null); setNome(''); setEmail(''); setSenha(''); setNivel('OPERADOR'); setAtivo(true);
+        setEditId(null); setNome(''); setLoginUsuario(''); setEmail(''); setSenha(''); setNivel('OPERADOR'); setAtivo(true);
         setViewForm(false); setErro('');
     };
 
@@ -53,7 +55,8 @@ export const UsuariosView = () => {
         setErro('');
         try {
             if (!editId && !senha.trim()) { setErro('Senha obrigatória para novo usuário.'); setCarregando(false); return; }
-            const body: any = { nome, email, nivel_permissao: nivel, ativo };
+            if (!loginUsuario.trim()) { setErro('Usuário (login) obrigatório.'); setCarregando(false); return; }
+            const body: any = { nome, login: loginUsuario.trim().toLowerCase(), email, nivel_permissao: nivel, ativo };
             if (senha.trim()) body.senha = senha;
 
             const res = editId
@@ -74,7 +77,7 @@ export const UsuariosView = () => {
     };
 
     const handleEditar = (u: Usuario) => {
-        setEditId(u.id); setNome(u.nome); setEmail(u.email); setSenha('');
+        setEditId(u.id); setNome(u.nome); setLoginUsuario(u.login); setEmail(u.email || ''); setSenha('');
         setNivel(u.nivel_permissao); setAtivo(u.ativo);
         setViewForm(true);
     };
@@ -121,6 +124,10 @@ export const UsuariosView = () => {
                             <input required type="text" placeholder="Nome do usuário" value={nome} onChange={e => setNome(e.target.value)} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium" />
                         </div>
                         <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-700 ml-1">Usuário <span className="text-slate-400 font-medium text-xs">(usado no login)</span></label>
+                            <input required type="text" placeholder="ex: joao.silva" value={loginUsuario} onChange={e => setLoginUsuario(e.target.value.replace(/\s/g, ''))} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium" />
+                        </div>
+                        <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 ml-1">E-mail <span className="text-slate-400 font-medium">(opcional)</span></label>
                             <input type="email" placeholder="usuario@email.com" value={email} onChange={e => setEmail(e.target.value)} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium" />
                         </div>
@@ -160,6 +167,7 @@ export const UsuariosView = () => {
                     <thead className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
                         <tr>
                             <th className="px-8 py-5">Nome</th>
+                            <th className="px-8 py-5">Usuário</th>
                             <th className="px-8 py-5">E-mail</th>
                             <th className="px-8 py-5">Nível</th>
                             <th className="px-8 py-5">Status</th>
@@ -168,7 +176,7 @@ export const UsuariosView = () => {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {usuarios.length === 0 ? (
-                            <tr><td colSpan={5} className="px-8 py-12 text-center text-slate-400 font-bold">Nenhum usuário cadastrado.</td></tr>
+                            <tr><td colSpan={6} className="px-8 py-12 text-center text-slate-400 font-bold">Nenhum usuário cadastrado.</td></tr>
                         ) : usuarios.map(u => (
                             <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
                                 <td className="px-8 py-5">
@@ -178,6 +186,9 @@ export const UsuariosView = () => {
                                         </div>
                                         <span className="font-bold text-slate-800">{u.nome}</span>
                                     </div>
+                                </td>
+                                <td className="px-8 py-5">
+                                    <span className="font-black text-slate-600 text-sm bg-slate-100 px-2 py-1 rounded-lg">{u.login}</span>
                                 </td>
                                 <td className="px-8 py-5 text-slate-500 font-medium">{u.email || <span className="text-slate-300">—</span>}</td>
                                 <td className="px-8 py-5">
