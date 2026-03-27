@@ -334,7 +334,7 @@ app.get('/api/relatorios/custos-por-obra', async (_req, res) => {
 // ─── Frontend estático (produção) ────────────────────────────────────────────
 const frontendDist = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDist));
-app.get('*', (_req, res) => {
+app.get(/^\/(?!api(?:\/|$)).*/, (_req, res) => {
   res.sendFile(path.join(frontendDist, 'index.html'));
 });
 
