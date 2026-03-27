@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 require('dotenv').config();
@@ -329,6 +330,13 @@ app.get('/api/relatorios/custos-por-obra', async (_req, res) => {
     });
     res.json(result);
   } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+// ─── Frontend estático (produção) ────────────────────────────────────────────
+const frontendDist = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDist));
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(frontendDist, 'index.html'));
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────

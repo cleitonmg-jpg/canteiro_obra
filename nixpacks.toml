@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = [
+  "npm install --prefix backend",
+  "npm install --prefix frontend"
+]
+
+[phases.build]
+cmds = [
+  "cd backend && npx prisma generate",
+  "cd frontend && npm run build"
+]
+
+[start]
+cmd = "node backend/src/index.js"
