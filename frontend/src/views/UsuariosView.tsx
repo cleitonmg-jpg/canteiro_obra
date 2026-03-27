@@ -129,7 +129,7 @@ export const UsuariosView = () => {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 ml-1">E-mail <span className="text-slate-400 font-medium">(opcional)</span></label>
-                            <input type="email" placeholder="usuario@email.com" value={email} onChange={e => setEmail(e.target.value)} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium" />
+                            <input type="text" placeholder="usuario@email.com" value={email} onChange={e => setEmail(e.target.value)} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium" />
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 ml-1">{editId ? 'Nova Senha (opcional)' : 'Senha'}</label>
