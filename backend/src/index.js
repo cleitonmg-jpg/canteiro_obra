@@ -97,7 +97,24 @@ app.put('/api/grupos/:id', async (req, res) => {
 
 app.delete('/api/grupos/:id', async (req, res) => {
   try {
-    await prisma.tb_grupo.delete({ where: { id: parseInt(req.params.id) } });
+    const id = parseInt(req.params.id);
+
+    const produtos = await prisma.tb_produto_servico.findMany({
+      where: { id_grupo: id },
+      select: { id: true },
+    });
+
+    if (produtos.length) {
+      const usados = await prisma.tb_movimentacao_obra.count({
+        where: { id_produto_servico: { in: produtos.map(p => p.id) } },
+      });
+      if (usados > 0) {
+        return res.status(400).json({ erro: 'Não é possível excluir este grupo porque existem lançamentos vinculados a itens deste grupo.' });
+      }
+      return res.status(400).json({ erro: 'Não é possível excluir este grupo porque existem produtos/serviços cadastrados nele. Remova ou mova os itens para outro grupo antes.' });
+    }
+
+    await prisma.tb_grupo.delete({ where: { id } });
     res.json({ mensagem: 'Grupo excluído' });
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
@@ -141,7 +158,12 @@ app.put('/api/produtos/:id', async (req, res) => {
 
 app.delete('/api/produtos/:id', async (req, res) => {
   try {
-    await prisma.tb_produto_servico.update({ where: { id: parseInt(req.params.id) }, data: { ativo: false } });
+    const id = parseInt(req.params.id);
+    const usados = await prisma.tb_movimentacao_obra.count({ where: { id_produto_servico: id } });
+    if (usados > 0) {
+      return res.status(400).json({ erro: 'Não é possível excluir/inativar este item porque existem lançamentos vinculados a ele.' });
+    }
+    await prisma.tb_produto_servico.update({ where: { id }, data: { ativo: false } });
     res.json({ mensagem: 'Item inativado' });
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
@@ -248,7 +270,12 @@ app.put('/api/obras/:id', async (req, res) => {
 
 app.delete('/api/obras/:id', async (req, res) => {
   try {
-    await prisma.tb_obra.delete({ where: { id: parseInt(req.params.id) } });
+    const id = parseInt(req.params.id);
+    const usados = await prisma.tb_movimentacao_obra.count({ where: { id_obra: id } });
+    if (usados > 0) {
+      return res.status(400).json({ erro: 'Não é possível excluir esta obra porque existem lançamentos vinculados a ela.' });
+    }
+    await prisma.tb_obra.delete({ where: { id } });
     res.json({ mensagem: 'Obra excluída' });
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });

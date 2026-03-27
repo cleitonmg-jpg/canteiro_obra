@@ -73,10 +73,11 @@ export const GruposView = ({ buscaExterna }: any) => {
         if (!window.confirm('Excluir este grupo?')) return;
         try {
             const res = await fetch(`${API}/api/grupos/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error();
+            const body = await res.json().catch(() => ({} as any));
+            if (!res.ok) throw new Error(body.erro || 'Erro ao excluir grupo.');
             await carregar();
-        } catch {
-            setErro('Erro ao excluir grupo.');
+        } catch (e: any) {
+            setErro(e?.message || 'Erro ao excluir grupo.');
         }
     };
 
@@ -87,13 +88,13 @@ export const GruposView = ({ buscaExterna }: any) => {
 
     return (
         <div className="space-y-8 max-w-5xl mx-auto">
-            <div className="flex justify-between items-center bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
+            <div className="flex justify-between items-center bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm">
                 <div>
-                    <h2 className="text-3xl font-black text-slate-800">Grupos de Itens</h2>
+                    <h2 className="text-2xl md:text-3xl font-black text-slate-800">Grupos de Itens</h2>
                     <p className="text-slate-500 font-bold mt-2">Classificações para materiais e serviços.</p>
                 </div>
-                <div className="bg-blue-50 text-blue-600 p-4 rounded-2xl">
-                    <Tag size={32} />
+                <div className="bg-blue-50 text-blue-600 p-3 rounded-2xl">
+                    <Tag size={28} />
                 </div>
             </div>
 

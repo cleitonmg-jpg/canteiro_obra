@@ -23,7 +23,7 @@ const StatCard = ({ icon: Icon, label, value, color, onClick, hint }: any) => {
   return (
     <Comp
       onClick={onClick}
-      className={`bg-white p-4 md:p-5 rounded-[24px] border border-slate-200 shadow-sm transition-all hover:shadow-xl hover:shadow-slate-100 ${
+      className={`bg-white p-4 rounded-[22px] border border-slate-200 shadow-sm transition-all hover:shadow-xl hover:shadow-slate-100 ${
         clickable ? 'text-left cursor-pointer hover:border-blue-300' : ''
       }`}
     >
@@ -33,7 +33,7 @@ const StatCard = ({ icon: Icon, label, value, color, onClick, hint }: any) => {
         </div>
         <p className="text-xs font-black text-slate-700 tracking-tight leading-none">{label}</p>
       </div>
-      <h4 className="mt-3 text-xl md:text-2xl font-black text-slate-900 tracking-tighter leading-none">{value}</h4>
+      <h4 className="mt-3 text-xl font-black text-slate-900 tracking-tighter leading-none">{value}</h4>
       {hint && <p className="text-[11px] text-slate-400 font-bold mt-1.5">{hint}</p>}
     </Comp>
   );
@@ -84,7 +84,7 @@ export const DashboardOverview = ({ userName }: any) => {
   }, []);
 
   const obrasAtivas = useMemo(() => obras.filter(o => isObraAtiva(o.status)), [obras]);
-  const obrasExecucao = useMemo(() => obrasAtivas.filter(o => String(o.status || '').toUpperCase().includes('EXEC')), [obrasAtivas]);
+  const obrasExecucao = useMemo(() => obrasAtivas, [obrasAtivas]);
 
   const orcamentoAtivo = useMemo(() => obrasAtivas.reduce((acc, o) => acc + Number(o.valor_contratado || 0), 0), [obrasAtivas]);
   const gastosAtivos = useMemo(() => obrasAtivas.reduce((acc, o) => acc + Number(o.gastos || 0), 0), [obrasAtivas]);
@@ -109,21 +109,21 @@ export const DashboardOverview = ({ userName }: any) => {
 
   return (
     <div className="space-y-8">
-      <section className="bg-gradient-to-br from-blue-700 to-blue-500 rounded-3xl p-5 md:p-6 text-white relative overflow-hidden shadow-lg shadow-blue-100 flex items-center justify-between">
+      <section className="bg-gradient-to-br from-blue-700 to-blue-500 rounded-3xl p-4 md:p-5 text-white relative overflow-hidden shadow-lg shadow-blue-100 flex items-center justify-between">
         <div className="relative z-10 space-y-2">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 w-fit px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md">Status: Online</div>
-            <h2 className="text-xl md:text-2xl font-black tracking-tighter">Painel de Controle</h2>
+            <h2 className="text-lg md:text-xl font-black tracking-tighter">Painel de Controle</h2>
           </div>
-          <p className="text-blue-50 font-medium opacity-90 max-w-xl text-sm">Olá {userName}, acompanhe obras e custos em tempo real.</p>
+          <p className="text-blue-50 font-medium opacity-90 max-w-xl text-xs md:text-sm">Olá {userName}, acompanhe obras e custos em tempo real.</p>
         </div>
-        <Construction size={72} className="text-white/10 transform rotate-12 absolute right-4 md:right-8" />
+        <Construction size={56} className="text-white/10 transform rotate-12 absolute right-4 md:right-8" />
       </section>
 
       {erro && <div className="bg-red-50 border border-red-200 text-red-700 font-bold px-6 py-4 rounded-2xl">{erro}</div>}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 md:gap-6">
-        <StatCard icon={HardHat} label="Obras em Execução" value={loading ? '...' : String(obrasExecucao.length)} color="blue" onClick={() => setModal('obras')} hint="Toque para listar" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 md:gap-5">
+        <StatCard icon={HardHat} label="Obras em Execução" value={loading ? '...' : String(obrasExecucao.length)} color="blue" onClick={() => setModal('obras')} hint="Toque para listar obras ativas" />
         <StatCard icon={TrendingUp} label="Lucro Previsto" value={loading ? '...' : formatBRL(lucroPrevisto)} color="emerald" hint={loading ? '' : `Orç.: ${formatBRL(orcamentoAtivo)} • Gastos: ${formatBRL(gastosAtivos)}`} />
         <StatCard icon={BarChart3} label="Aportes Ativos" value={loading ? '...' : formatBRL(gastosAtivos)} color="amber" hint="Soma dos gastos nas obras ativas" />
         <StatCard icon={TrendingDown} label="Orçamento (Obras Ativas)" value={loading ? '...' : formatBRL(orcamentoAtivo)} color="rose" hint="Soma do valor contratado das obras ativas" />
@@ -188,9 +188,30 @@ export const DashboardOverview = ({ userName }: any) => {
           )}
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-[28px] p-6 md:p-8 shadow-sm space-y-4">
-          <h3 className="text-lg font-black text-slate-800">Auditoria</h3>
-          <p className="text-sm text-slate-500 font-bold">Em breve: listagem de auditoria real (tabela `tb_auditoria`).</p>
+        <div className="bg-white border border-slate-200 rounded-[28px] overflow-hidden shadow-sm">
+          <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/30">
+            <h3 className="text-lg font-black text-slate-800">Lançamentos Recentes</h3>
+          </div>
+          {loading ? (
+            <div className="py-8 text-center text-slate-400 font-bold text-sm">Carregando...</div>
+          ) : lancamentos.length === 0 ? (
+            <div className="py-8 text-center text-slate-400 font-bold text-sm">Nenhum lançamento registrado.</div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {[...lancamentos]
+                .sort((a, b) => new Date(b.data_movimentacao).getTime() - new Date(a.data_movimentacao).getTime())
+                .slice(0, 6)
+                .map((l: any) => (
+                  <div key={l.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors">
+                    <p className="font-bold text-slate-800 text-sm truncate">{l?.tb_produto_servico?.descricao || 'Item'}</p>
+                    <div className="flex items-center justify-between mt-1 gap-2">
+                      <p className="text-[11px] font-bold text-slate-400 truncate">{l?.tb_obra?.nome || '--'}</p>
+                      <p className="text-[11px] font-black text-blue-600 shrink-0">{formatBRL(Number(l.total_calculado || 0))}</p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       </div>
 

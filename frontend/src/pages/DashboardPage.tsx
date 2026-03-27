@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../config';
+import { useEmpresaNome } from '../hooks/useEmpresaNome';
 
 import { DashboardOverview } from '../views/DashboardOverview';
 import { EmpresaView } from '../views/EmpresaView';
@@ -46,6 +47,7 @@ const NavItem = ({ icon: Icon, label, active = false, onClick }: any) => (
 
 const DashboardPage: React.FC = () => {
     const navigate = useNavigate();
+    const empresaNome = useEmpresaNome();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -63,6 +65,15 @@ const DashboardPage: React.FC = () => {
     const handleLogout = () => {
         localStorage.clear();
         navigate('/');
+    };
+
+    const handleTabChange = (tab: string) => {
+        setActiveTab(tab);
+        setSidebarOpen(false);
+        setGlobalSearch('');
+        setBuscaObrasExterna('');
+        setBuscaProdutosExterna('');
+        setBuscaGruposExterna('');
     };
 
     const carregarSearchData = async () => {
@@ -102,11 +113,21 @@ const DashboardPage: React.FC = () => {
 
     useEffect(() => {
         const termo = globalSearch.trim();
+
+        // Em outras abas, a busca do topo filtra a listagem da própria aba (sem dropdown global)
+        if (activeTab !== 'dashboard') {
+            aplicarBuscaNaAba(termo);
+            setSearchOpen(false);
+            setSearchResults([]);
+            return;
+        }
+
         if (termo.length < 2) {
             setSearchOpen(false);
             setSearchResults([]);
             return;
         }
+
         setSearchOpen(true);
         const id = setTimeout(async () => {
             const base = await carregarSearchData();
@@ -131,7 +152,7 @@ const DashboardPage: React.FC = () => {
         }, 250);
 
         return () => clearTimeout(id);
-    }, [globalSearch]);
+    }, [globalSearch, activeTab]);
 
     return (
         <div className="min-h-screen bg-slate-50 flex">
@@ -169,23 +190,23 @@ const DashboardPage: React.FC = () => {
 
                 <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-4 mt-2">Visão Geral</p>
-                    <NavItem icon={LayoutDashboard} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setSidebarOpen(false); }} />
-                    
+                    <NavItem icon={LayoutDashboard} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-8 mb-4">Cadastros</p>
-                    <NavItem icon={Building2} label="Cadastro da Empresa" active={activeTab === 'empresa'} onClick={() => { setActiveTab('empresa'); setSidebarOpen(false); }} />
-                    <NavItem icon={HardHat} label="Cadastro de Obras" active={activeTab === 'obras'} onClick={() => { setActiveTab('obras'); setSidebarOpen(false); }} />
-                    <NavItem icon={Package} label="Cadastro de Grupos" active={activeTab === 'grupos'} onClick={() => { setActiveTab('grupos'); setSidebarOpen(false); }} />
-                    <NavItem icon={Settings} label="Produtos e Serviços" active={activeTab === 'produtos'} onClick={() => { setActiveTab('produtos'); setSidebarOpen(false); }} />
+                    <NavItem icon={Building2} label="Cadastro da Empresa" active={activeTab === 'empresa'} onClick={() => handleTabChange('empresa')} />
+                    <NavItem icon={HardHat} label="Cadastro de Obras" active={activeTab === 'obras'} onClick={() => handleTabChange('obras')} />
+                    <NavItem icon={Package} label="Cadastro de Grupos" active={activeTab === 'grupos'} onClick={() => handleTabChange('grupos')} />
+                    <NavItem icon={Settings} label="Produtos e Serviços" active={activeTab === 'produtos'} onClick={() => handleTabChange('produtos')} />
 
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-8 mb-4">Movimentação</p>
-                    <NavItem icon={Calculator} label="Lançamento nas Obras" active={activeTab === 'movimentos'} onClick={() => { setActiveTab('movimentos'); setSidebarOpen(false); }} />
+                    <NavItem icon={Calculator} label="Lançamento nas Obras" active={activeTab === 'movimentos'} onClick={() => handleTabChange('movimentos')} />
 
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-8 mb-4">Consultas</p>
-                    <NavItem icon={BarChart3} label="Relatórios" active={activeTab === 'relatorios'} onClick={() => { setActiveTab('relatorios'); setSidebarOpen(false); }} />
+                    <NavItem icon={BarChart3} label="Relatórios" active={activeTab === 'relatorios'} onClick={() => handleTabChange('relatorios')} />
 
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-8 mb-4">Sistema</p>
-                    <NavItem icon={Users} label="Usuários" active={activeTab === 'usuarios'} onClick={() => { setActiveTab('usuarios'); setSidebarOpen(false); }} />
-                    <NavItem icon={FileText} label="Auditoria" active={activeTab === 'auditoria'} onClick={() => { setActiveTab('auditoria'); setSidebarOpen(false); }} />
+                    <NavItem icon={Users} label="Usuários" active={activeTab === 'usuarios'} onClick={() => handleTabChange('usuarios')} />
+                    <NavItem icon={FileText} label="Auditoria" active={activeTab === 'auditoria'} onClick={() => handleTabChange('auditoria')} />
                 </nav>
 
                 <div className="p-6 border-t border-slate-100 bg-slate-50/50">
@@ -218,9 +239,13 @@ const DashboardPage: React.FC = () => {
                         <input 
                             type="text"
                             value={globalSearch}
-                            onChange={(e) => setGlobalSearch(e.target.value)}
-                            onFocus={() => { if (globalSearch.trim().length >= 2) setSearchOpen(true); }}
-                            onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                setGlobalSearch(v);
+                                if (activeTab !== 'dashboard') aplicarBuscaNaAba(v.trim());
+                            }}
+                            onFocus={() => { if (activeTab === 'dashboard' && globalSearch.trim().length >= 2) setSearchOpen(true); }}
+                            onBlur={() => { if (activeTab === 'dashboard') setTimeout(() => setSearchOpen(false), 150); }}
                             onKeyDown={(e) => {
                                 if (e.key !== 'Enter') return;
                                 e.preventDefault();
@@ -268,9 +293,9 @@ const DashboardPage: React.FC = () => {
 
                     <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6">
                         <div className="flex items-center gap-4 md:border-r md:border-slate-200 md:pr-6">
-                            <div className="bg-emerald-50 text-emerald-600 p-2 rounded-lg cursor-pointer hover:bg-emerald-100 transition-colors">
+                            <button title="Nova Obra" onClick={() => handleTabChange('obras')} className="bg-emerald-50 text-emerald-600 p-2 rounded-lg hover:bg-emerald-100 transition-colors">
                                 <Plus size={20} />
-                            </div>
+                            </button>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="text-right">
@@ -302,7 +327,7 @@ const DashboardPage: React.FC = () => {
                     <p className="text-slate-400 text-xs font-bold uppercase tracking-[2px]">
                         V9 INFORMÁTICA LTDA - (37) 4141-0341 - Divinópolis MG
                     </p>
-                    <p className="text-slate-300 text-[10px] mt-2 italic font-medium">Software Oficial da S.R Engenharia e Projetos Ltda</p>
+                    <p className="text-slate-300 text-[10px] mt-2 italic font-medium">Software Oficial da {empresaNome || 'Empresa'}</p>
                 </footer>
             </main>
         </div>

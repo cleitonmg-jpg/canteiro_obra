@@ -117,10 +117,11 @@ export const ProdutosView = ({ buscaExterna }: any) => {
         if (!window.confirm('Excluir este item?')) return;
         try {
             const res = await fetch(`${API}/api/produtos/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error();
+            const body = await res.json().catch(() => ({} as any));
+            if (!res.ok) throw new Error(body.erro || 'Erro ao excluir item.');
             await carregar();
-        } catch {
-            setErro('Erro ao excluir item.');
+        } catch (e: any) {
+            setErro(e?.message || 'Erro ao excluir item.');
         }
     };
 
@@ -136,13 +137,13 @@ export const ProdutosView = ({ buscaExterna }: any) => {
 
     return (
         <div className="space-y-8">
-            <div className="flex justify-between items-center bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
+            <div className="flex justify-between items-center bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm">
                 <div>
-                    <h2 className="text-3xl font-black text-slate-800">Produtos e Serviços</h2>
+                    <h2 className="text-2xl md:text-3xl font-black text-slate-800">Produtos e Serviços</h2>
                     <p className="text-slate-500 font-bold mt-2">Catálogo mestre. Busque pela descrição ou código.</p>
                 </div>
                 {!viewForm && (
-                    <button onClick={() => setViewForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl shadow-blue-100 transition-all">
+                    <button onClick={() => setViewForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl text-sm font-black flex items-center gap-2 shadow-xl shadow-blue-100 transition-all">
                         <Plus size={20} /> NOVO ITEM
                     </button>
                 )}
@@ -155,7 +156,7 @@ export const ProdutosView = ({ buscaExterna }: any) => {
             )}
 
             {viewForm ? (
-                <form onSubmit={handleSalvar} className="bg-white p-10 rounded-[32px] border border-slate-200 shadow-sm space-y-8">
+                <form onSubmit={handleSalvar} className="bg-white p-8 rounded-[28px] border border-slate-200 shadow-sm space-y-8">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-6">
                         <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
                             <Package className="text-blue-500" />

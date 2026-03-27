@@ -3,6 +3,12 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { LayoutDashboard, Settings, User as UserIcon, Building, LogIn } from 'lucide-react';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import { useEmpresaNome } from './hooks/useEmpresaNome';
+
+const EmpresaNomeInline = ({ fallback = 'Empresa', className = '' }: any) => {
+  const empresaNome = useEmpresaNome();
+  return <span className={className}>{empresaNome || fallback}</span>;
+};
 
 // Componente Header Principal
 const Header: React.FC = () => (
@@ -14,7 +20,7 @@ const Header: React.FC = () => (
         </div>
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">CANTEIRO DE OBRAS</h1>
         <span className="text-slate-300 hidden md:inline">|</span>
-        <p className="text-slate-500 font-medium">S.R Engenharia</p>
+        <EmpresaNomeInline className="text-slate-500 font-medium" />
       </div>
       <div className="flex items-center gap-4 w-full md:w-auto">
         <Link to="/login" className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-3 rounded-xl transition-all shadow-lg shadow-blue-200 transform hover:-translate-y-0.5">
@@ -66,7 +72,7 @@ const Home: React.FC = () => (
             <span className="text-blue-600">Engenharia Digital</span>
           </h2>
           <p className="text-slate-500 text-xl md:text-2xl leading-relaxed max-w-2xl font-medium">
-            O software oficial da <strong>S.R Engenharia e Projetos Ltda</strong>. 
+            O software oficial da <strong><EmpresaNomeInline fallback="sua empresa" /></strong>. 
             Controle custos, materiais e equipes em um único lugar.
           </p>
           

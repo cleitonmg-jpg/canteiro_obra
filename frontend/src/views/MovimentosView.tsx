@@ -30,6 +30,8 @@ export const MovimentosView = () => {
     const [carregando, setCarregando] = useState(false);
     const [sucesso, setSucesso] = useState(false);
     const [erro, setErro] = useState('');
+    const [historico, setHistorico] = useState<any[]>([]);
+    const [loadingHistorico, setLoadingHistorico] = useState(false);
 
     useEffect(() => {
         Promise.all([
@@ -41,6 +43,18 @@ export const MovimentosView = () => {
             if (obrasData.length) setObraId(String(obrasData[0].id));
         }).catch(() => setErro('Não foi possível conectar ao servidor.'));
     }, []);
+
+    const carregarHistorico = (idObra: string) => {
+        if (!idObra) return;
+        setLoadingHistorico(true);
+        fetch(`${API}/api/lancamentos?id_obra=${idObra}`)
+            .then(r => r.json())
+            .then(d => setHistorico(Array.isArray(d) ? d : []))
+            .catch(() => {})
+            .finally(() => setLoadingHistorico(false));
+    };
+
+    useEffect(() => { carregarHistorico(obraId); }, [obraId]);
 
     const produtosFiltrados = produtos.filter(p =>
         p.descricao.toLowerCase().includes(buscaProduto.toLowerCase()) ||
@@ -88,6 +102,7 @@ export const MovimentosView = () => {
             setItens([]);
             setSucesso(true);
             setTimeout(() => setSucesso(false), 3000);
+            carregarHistorico(obraId);
         } catch {
             setErro('Erro ao finalizar lançamento. Verifique a conexão.');
         } finally {
@@ -99,12 +114,12 @@ export const MovimentosView = () => {
 
     return (
         <div className="space-y-8 max-w-6xl mx-auto">
-            <div className="flex justify-between items-center bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
+            <div className="flex justify-between items-center bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm">
                 <div>
-                    <h2 className="text-3xl font-black text-slate-800">Lançamento na Obra</h2>
+                    <h2 className="text-2xl md:text-3xl font-black text-slate-800">Lançamento na Obra</h2>
                     <p className="text-slate-500 font-bold mt-2">Registro de materiais e serviços aplicados na obra.</p>
                 </div>
-                <div className="bg-blue-50 text-blue-600 p-4 rounded-2xl"><Calculator size={32} /></div>
+                <div className="bg-blue-50 text-blue-600 p-3 rounded-2xl"><Calculator size={28} /></div>
             </div>
 
             {erro && <div className="bg-red-50 border border-red-200 text-red-700 font-bold px-6 py-4 rounded-2xl">{erro}</div>}
@@ -170,10 +185,10 @@ export const MovimentosView = () => {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                 {/* Esquerda */}
                 <div className="lg:col-span-1 space-y-8">
-                    <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm space-y-6">
+                    <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm space-y-6">
                         <h3 className="text-xl font-black text-slate-800 border-b border-slate-100 pb-4">Dados Principais</h3>
                         <div className="space-y-4">
                             <div className="space-y-2">
@@ -192,7 +207,7 @@ export const MovimentosView = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm space-y-6 overflow-visible relative">
+                    <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm space-y-6 overflow-visible relative">
                         <h3 className="text-xl font-black text-slate-800 border-b border-slate-100 pb-4">Adicionar Item</h3>
                         {!produtoSelecionado ? (
                             <div className="relative">
@@ -257,7 +272,7 @@ export const MovimentosView = () => {
                 </div>
 
                 {/* Direita - Cesta */}
-                <div className="lg:col-span-2 flex flex-col h-[700px] bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden relative">
+                <div className="lg:col-span-2 flex flex-col h-[520px] md:h-[640px] lg:h-[700px] bg-white rounded-[28px] border border-slate-200 shadow-sm overflow-hidden relative">
                     <div className="bg-slate-50/80 p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
                         <h3 className="text-xl font-black text-slate-800">Cesta de Itens Lançados</h3>
                         <span className="bg-white px-3 py-1 rounded-full text-xs font-black text-blue-600 shadow-sm border border-slate-100">{itens.length} iten(s)</span>
@@ -310,21 +325,91 @@ export const MovimentosView = () => {
                         )}
                     </div>
 
-                    <div className="bg-slate-900 px-6 py-6 text-white shrink-0 rounded-[28px] shadow-lg shadow-slate-900/20">
+                    <div className="bg-slate-900 px-5 py-4 text-white shrink-0 rounded-2xl shadow-lg shadow-slate-900/20">
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Total do Lançamento</span>
-                            <span className="text-3xl font-black tracking-tighter text-emerald-400">{formatBRL(totalGeral)}</span>
+                            <span className="text-2xl md:text-3xl font-black tracking-tighter text-emerald-400">{formatBRL(totalGeral)}</span>
                         </div>
                         <button
                             onClick={handleFinalizar}
                             disabled={itens.length === 0 || carregando || !obraId}
-                            className={`w-full ${itens.length > 0 && obraId ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/30' : 'bg-slate-800 text-slate-500 cursor-not-allowed'} text-white py-3.5 rounded-2xl font-black text-base md:text-lg flex items-center justify-center gap-3 active:scale-95 transition-all`}>
+                            className={`w-full ${itens.length > 0 && obraId ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/30' : 'bg-slate-800 text-slate-500 cursor-not-allowed'} text-white py-3 rounded-2xl font-black text-sm md:text-base flex items-center justify-center gap-3 active:scale-95 transition-all`}>
                             <CheckCircle2 size={18} />
                             {carregando ? 'SALVANDO...' : 'FINALIZAR LANÇAMENTO'}
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* Histórico da obra selecionada */}
+            {obraId && (
+                <div className="bg-white border border-slate-200 rounded-[28px] overflow-hidden shadow-sm">
+                    <div className="px-6 md:px-8 py-5 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+                        <h3 className="text-lg font-black text-slate-800">Histórico da Obra</h3>
+                        <span className="text-xs font-black text-slate-400">{historico.length} lançamento(s)</span>
+                    </div>
+                    {loadingHistorico ? (
+                        <div className="py-8 text-center text-slate-400 font-bold">Carregando...</div>
+                    ) : historico.length === 0 ? (
+                        <div className="py-8 text-center text-slate-400 font-bold">Nenhum lançamento nesta obra.</div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                                    <tr>
+                                        <th className="px-6 py-4">Data</th>
+                                        <th className="px-6 py-4">Produto / Serviço</th>
+                                        <th className="px-6 py-4 text-center">Qtd</th>
+                                        <th className="px-6 py-4 text-right">Unit.</th>
+                                        <th className="px-6 py-4 text-right">Total</th>
+                                        <th className="px-6 py-4 w-14"></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {[...historico].sort((a, b) => new Date(b.data_movimentacao).getTime() - new Date(a.data_movimentacao).getTime()).map((l: any) => (
+                                        <tr key={l.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-6 py-4 text-xs font-bold text-slate-400">
+                                                {new Date(l.data_movimentacao).toLocaleDateString('pt-BR')}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="font-bold text-slate-700 text-sm">{l?.tb_produto_servico?.descricao || '—'}</p>
+                                                <p className="text-[10px] font-black text-blue-500">{l?.tb_produto_servico?.codigo_interno}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-center font-bold text-slate-600 text-sm">
+                                                {Number(l.quantidade).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}
+                                                {l?.tb_produto_servico?.unidade_medida && <span className="text-slate-400 ml-1 text-xs">{l.tb_produto_servico.unidade_medida}</span>}
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-bold text-slate-500 text-sm">{formatBRL(Number(l.preco_custo_aplicado || 0))}</td>
+                                            <td className="px-6 py-4 text-right font-black text-slate-800">{formatBRL(Number(l.total_calculado || 0))}</td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button
+                                                    onClick={async () => {
+                                                        if (!window.confirm('Excluir este lançamento?')) return;
+                                                        await fetch(`${API}/api/lancamentos/${l.id}`, { method: 'DELETE' });
+                                                        carregarHistorico(obraId);
+                                                    }}
+                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                <tfoot className="bg-slate-50 border-t-2 border-slate-200">
+                                    <tr>
+                                        <td colSpan={4} className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">{historico.length} item(ns)</td>
+                                        <td className="px-6 py-4 text-right font-black text-slate-700">
+                                            {formatBRL(historico.reduce((acc: number, l: any) => acc + Number(l.total_calculado || 0), 0))}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

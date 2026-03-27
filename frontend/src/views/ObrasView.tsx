@@ -197,8 +197,14 @@ export const ObrasView = ({ buscaExterna }: any) => {
 
     const handleExcluir = async (id: number) => {
         if (!window.confirm('Certeza que deseja excluir esta obra?')) return;
-        try { await fetch(`${API}/api/obras/${id}`, { method: 'DELETE' }); await carregar(); }
-        catch { setErro('Erro ao excluir obra.'); }
+        try {
+            const res = await fetch(`${API}/api/obras/${id}`, { method: 'DELETE' });
+            const body = await res.json().catch(() => ({} as any));
+            if (!res.ok) throw new Error(body.erro || 'Erro ao excluir obra.');
+            await carregar();
+        } catch (e: any) {
+            setErro(e?.message || 'Erro ao excluir obra.');
+        }
     };
 
     const filtradas = obras.filter(o => o.nome.toLowerCase().includes(busca.toLowerCase()));
@@ -309,13 +315,13 @@ export const ObrasView = ({ buscaExterna }: any) => {
     // ── Lista de obras ─────────────────────────────────────────────────────────
     return (
         <div className="space-y-8">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm gap-4">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center bg-white p-5 rounded-[26px] border border-slate-200 shadow-sm gap-4">
                 <div>
                     <h2 className="text-2xl font-black text-slate-800">Canteiros de Obra</h2>
                     <p className="text-slate-500 font-bold mt-2">Gerencie todas as suas construções e licitações.</p>
                 </div>
                 {!viewForm && (
-                    <button onClick={() => setViewForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl text-sm font-black shadow-lg shadow-blue-100 flex items-center gap-2 transition-all">
+                    <button onClick={() => setViewForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-2xl text-sm font-black shadow-lg shadow-blue-100 flex items-center gap-2 transition-all">
                         <Plus size={20} /> NOVA OBRA / LICITAÇÃO
                     </button>
                 )}
@@ -324,7 +330,7 @@ export const ObrasView = ({ buscaExterna }: any) => {
             {erro && <div className="bg-red-50 border border-red-200 text-red-700 font-bold px-6 py-4 rounded-2xl">{erro}</div>}
 
             {viewForm ? (
-                <form onSubmit={handleSalvar} className="bg-white p-10 rounded-[32px] border border-slate-200 shadow-sm space-y-8">
+                <form onSubmit={handleSalvar} className="bg-white p-8 rounded-[28px] border border-slate-200 shadow-sm space-y-8">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-6">
                         <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
                             <Building2 className="text-blue-500" />
@@ -396,7 +402,7 @@ export const ObrasView = ({ buscaExterna }: any) => {
                                 const positivo = lucro >= 0;
                                 const pie = buildPie(gastosPorGrupo[o.id] || []);
                                 return (
-                                    <div key={o.id} className="bg-white border border-slate-200 rounded-[28px] p-6 shadow-sm hover:shadow-xl hover:shadow-slate-200 transition-all group border-b-4 border-b-blue-600 flex flex-col h-full">
+                                    <div key={o.id} className="bg-white border border-slate-200 rounded-[26px] p-5 shadow-sm hover:shadow-xl hover:shadow-slate-200 transition-all group border-b-4 border-b-blue-600 flex flex-col h-full">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="bg-blue-50 text-blue-600 p-2.5 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                                 <Building2 size={20} />
@@ -415,7 +421,7 @@ export const ObrasView = ({ buscaExterna }: any) => {
                                             </div>
                                         </div>
 
-                                        <h3 className="text-xl font-black text-slate-800 mb-2 truncate leading-tight" title={o.nome}>{o.nome}</h3>
+                                        <h3 className="text-lg md:text-xl font-black text-slate-800 mb-1.5 truncate leading-tight" title={o.nome}>{o.nome}</h3>
 
                                         <div className="space-y-3 mb-4 flex-1">
                                             <div className="flex items-center gap-2 text-slate-500 text-xs font-bold">

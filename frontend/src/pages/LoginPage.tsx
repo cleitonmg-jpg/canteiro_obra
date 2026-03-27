@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Lock, ArrowRight, Construction } from 'lucide-react';
+import { useEmpresaNome } from '../hooks/useEmpresaNome';
 
 const LoginPage: React.FC = () => {
     const navigate = useNavigate();
+    const empresaNome = useEmpresaNome();
     const [login, setLogin] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -33,7 +35,7 @@ const LoginPage: React.FC = () => {
                         <Construction size={48} strokeWidth={2.5} />
                     </div>
                     <h1 className="text-3xl font-black text-slate-800 tracking-tight">CANTEIRO DE OBRAS</h1>
-                    <p className="text-slate-500 font-medium">S.R Engenharia e Projetos Ltda</p>
+                    <p className="text-slate-500 font-medium">{empresaNome || 'Empresa'}</p>
                 </div>
 
                 {/* Card de Login */}

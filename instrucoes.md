@@ -26,7 +26,7 @@ Você deve atuar como um Desenvolvedor Sênior e Especialista em Administração
 
 ## 4. Banco de Dados e Naming
 - **Linguagem:** Nomes de campos e tabelas em **Português Brasil** (exceto `email`).
-- **Padrão Multi-empresa:** Ao criar a base para uma nova empresa, usar o CNPJ (apenas números) + sufixo `_OS` (Ex: `1165592000164_OS`).
+- **Padrão Multi-empresa:** Ao criar a base para uma nova empresa, usar o CNPJ #(apenas números) + sufixo `_OS` (Ex: `1165592000164_OS`). Apenas para projeto ESPECIFICO
 - **Segurança:** 
     - Usuário Master/Root: `Master` / Senha: `Belvedere640@`.
     - Script de criação automática de tabelas se não existirem.
