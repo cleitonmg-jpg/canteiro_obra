@@ -4,6 +4,7 @@ import { LayoutDashboard, Settings, User as UserIcon, Building, LogIn } from 'lu
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import RelatorioPage from './pages/RelatorioPage';
+import RelatorioObraPage from './pages/RelatorioObraPage';
 import { useEmpresaNome } from './hooks/useEmpresaNome';
 
 const EmpresaNomeInline = ({ fallback = 'Empresa', className = '' }: any) => {
@@ -115,6 +116,7 @@ const App: React.FC = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/relatorios" element={<RelatorioPage />} />
+        <Route path="/relatorio-obra/:id" element={<RelatorioObraPage />} />
       </Routes>
     </Router>
   );

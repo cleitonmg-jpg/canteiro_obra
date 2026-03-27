@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Building2, RefreshCw, ChevronDown, ChevronRight, Edit2, Trash2, Save, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Building2, RefreshCw, ChevronDown, ChevronRight, Edit2, Trash2, Save, X, Printer } from 'lucide-react';
 
 import { API } from '../config';
 import { formatBRL } from '../utils/format';
@@ -170,11 +170,12 @@ export const RelatoriosView = () => {
                                 <th className="px-8 py-5 text-right">Gastos</th>
                                 <th className="px-8 py-5 text-right">Lucro</th>
                                 <th className="px-8 py-5 text-center">Itens</th>
+                                <th className="px-8 py-5"></th>
                             </tr>
                         </thead>
                         <tbody>
                             {dados.length === 0 ? (
-                                <tr><td colSpan={7} className="px-8 py-12 text-center text-slate-400 font-bold">
+                                <tr><td colSpan={8} className="px-8 py-12 text-center text-slate-400 font-bold">
                                     {carregando ? 'Carregando...' : 'Nenhuma obra encontrada.'}
                                 </td></tr>
                             ) : dados.map(d => (
@@ -204,12 +205,21 @@ export const RelatoriosView = () => {
                                         <td className="px-8 py-5 text-center">
                                             <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-black">{d.qtd_lancamentos}</span>
                                         </td>
+                                        <td className="px-4 py-5">
+                                            <button
+                                                onClick={e => { e.stopPropagation(); window.open(`/relatorio-obra/${d.id}`, '_blank'); }}
+                                                title="Abrir relatório desta obra"
+                                                className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs transition-all shadow-sm"
+                                            >
+                                                <Printer size={13} /> Imprimir
+                                            </button>
+                                        </td>
                                     </tr>
 
                                     {/* Linha expandida com itens */}
                                     {expandida === d.id && (
                                         <tr key={`detail-${d.id}`}>
-                                            <td colSpan={7} className="px-0 py-0 bg-blue-50/50">
+                                            <td colSpan={8} className="px-0 py-0 bg-blue-50/50">
                                                 <div className="px-8 py-4">
                                                     {carregandoItens && !lancamentosMap[d.id] ? (
                                                         <p className="text-center text-slate-400 font-bold py-6">Carregando itens...</p>

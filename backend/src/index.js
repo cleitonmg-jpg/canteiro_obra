@@ -268,6 +268,14 @@ app.put('/api/obras/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+app.get('/api/obras/:id', async (req, res) => {
+  try {
+    const obra = await prisma.tb_obra.findUnique({ where: { id: parseInt(req.params.id) } });
+    if (!obra) return res.status(404).json({ erro: 'Obra não encontrada' });
+    res.json(obra);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
 app.delete('/api/obras/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -310,7 +318,7 @@ app.get('/api/lancamentos', async (req, res) => {
       where, orderBy: { data_movimentacao: 'asc' },
       include: {
         tb_obra: { select: { id: true, nome: true } },
-        tb_produto_servico: { select: { id: true, codigo_interno: true, descricao: true, unidade_medida: true } },
+        tb_produto_servico: { select: { id: true, codigo_interno: true, tipo: true, descricao: true, unidade_medida: true, tb_grupo: { select: { id: true, codigo: true, descricao: true } } } },
       },
     });
     res.json(lancamentos);
