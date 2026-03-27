@@ -215,9 +215,9 @@ export const DashboardOverview = ({ userName }: any) => {
         </div>
       </div>
 
-      <ModalShell title="Obras em Execução (Ativas)" open={modal === 'obras'} onClose={() => setModal(null)}>
+      <ModalShell title="Obras Ativas" open={modal === 'obras'} onClose={() => setModal(null)}>
         {obrasExecucao.length === 0 ? (
-          <div className="text-slate-400 font-bold">Nenhuma obra em execução.</div>
+          <div className="text-slate-400 font-bold">Nenhuma obra ativa.</div>
         ) : (
           <div className="space-y-3">
             {obrasExecucao.map(o => {
