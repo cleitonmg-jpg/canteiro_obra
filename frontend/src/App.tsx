@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { LayoutDashboard, Settings, User as UserIcon, Building, LogIn } from 'lucide-react';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import RelatorioPage from './pages/RelatorioPage';
 import { useEmpresaNome } from './hooks/useEmpresaNome';
 
 const EmpresaNomeInline = ({ fallback = 'Empresa', className = '' }: any) => {
@@ -113,6 +114,7 @@ const App: React.FC = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/relatorios" element={<RelatorioPage />} />
       </Routes>
     </Router>
   );

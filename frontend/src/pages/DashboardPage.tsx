@@ -202,7 +202,7 @@ const DashboardPage: React.FC = () => {
                     <NavItem icon={Calculator} label="Lançamento nas Obras" active={activeTab === 'movimentos'} onClick={() => handleTabChange('movimentos')} />
 
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-8 mb-4">Consultas</p>
-                    <NavItem icon={BarChart3} label="Relatórios" active={activeTab === 'relatorios'} onClick={() => handleTabChange('relatorios')} />
+                    <NavItem icon={BarChart3} label="Relatórios" active={false} onClick={() => { setSidebarOpen(false); window.open('/relatorios', '_blank'); }} />
 
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-8 mb-4">Sistema</p>
                     <NavItem icon={Users} label="Usuários" active={activeTab === 'usuarios'} onClick={() => handleTabChange('usuarios')} />
