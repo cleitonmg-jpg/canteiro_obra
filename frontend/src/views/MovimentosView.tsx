@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Search, Calculator, CheckCircle2 } from 'lucide-react';
 
-const API = 'http://localhost:3000';
+import { API } from '../config';
 
 interface Obra { id: number; nome: string; }
 interface Produto { id: number; codigo_interno: string; descricao: string; preco_custo: number; unidade_medida?: string; }

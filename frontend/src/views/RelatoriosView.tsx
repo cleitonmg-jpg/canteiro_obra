@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Building2, RefreshCw, ChevronDown, ChevronRight, Edit2, Trash2, Save, X } from 'lucide-react';
 
-const API = 'http://localhost:3000';
+import { API } from '../config';
 
 interface ResumoObra {
     id: number;

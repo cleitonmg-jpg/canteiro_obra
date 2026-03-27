@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Package, Search, X } from 'lucide-react';
 
-const API = 'http://localhost:3000';
+import { API } from '../config';
 
 interface Grupo {
     id: number;

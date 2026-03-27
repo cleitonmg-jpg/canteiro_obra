@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Building2, Save, Mail, Phone, MapPin, AlignLeft, Hash, CheckCircle2 } from 'lucide-react';
 
-const API = 'http://localhost:3000';
+import { API } from '../config';
 
 interface EmpresaViewProps {
     onSaved?: () => void;

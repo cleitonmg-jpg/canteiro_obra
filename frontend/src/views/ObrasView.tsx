@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Building2, MapPin, Search, Edit2, Trash2, Calendar, HardHat, X, TrendingDown, TrendingUp, List, ChevronLeft, Save } from 'lucide-react';
 
-const API = 'http://localhost:3000';
+import { API } from '../config';
 
 interface Obra {
     id: number;
