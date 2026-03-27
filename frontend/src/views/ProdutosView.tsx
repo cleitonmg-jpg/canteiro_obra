@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Package, Search, X } from 'lucide-react';
 
 import { API } from '../config';
+import { formatBRL } from '../utils/format';
 
 interface Grupo {
     id: number;
@@ -253,7 +254,7 @@ export const ProdutosView = ({ buscaExterna }: any) => {
                                             }
                                         </td>
                                         <td className="px-8 py-5">{p.unidade_medida}</td>
-                                        <td className="px-8 py-5 font-black text-slate-800">R$ {Number(p.preco_custo).toFixed(2).replace('.', ',')}</td>
+                                        <td className="px-8 py-5 font-black text-slate-800">{formatBRL(p.preco_custo)}</td>
                                         <td className="px-8 py-5 text-right">
                                             <div className="flex justify-end gap-2">
                                                 <button onClick={() => handleEditar(p)} className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"><Edit2 size={18} /></button>

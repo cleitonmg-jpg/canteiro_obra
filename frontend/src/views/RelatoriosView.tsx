@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Building2, RefreshCw, ChevronDown, ChevronRight, Edit2, Trash2, Save, X } from 'lucide-react';
 
 import { API } from '../config';
+import { formatBRL } from '../utils/format';
 
 interface ResumoObra {
     id: number;
@@ -22,7 +23,7 @@ interface Lancamento {
     tb_produto_servico?: { id: number; codigo_interno: string; descricao: string; unidade_medida?: string };
 }
 
-const fmt = (v: number) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+const fmt = (v: number) => formatBRL(v);
 
 const statusColor: Record<string, string> = {
     'LICITAÇÃO': 'bg-amber-100 text-amber-700',

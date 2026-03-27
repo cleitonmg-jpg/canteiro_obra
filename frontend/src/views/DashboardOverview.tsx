@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BarChart3, Calculator, Construction, HardHat, TrendingDown, TrendingUp, X } from 'lucide-react';
 import { API } from '../config';
-
-const fmtBRL = (value: number) => {
-  const num = Number(value || 0);
-  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-};
+import { formatBRL } from '../utils/format';
 
 const isObraAtiva = (status?: string) => String(status || '').toUpperCase() !== 'FINALIZADA';
 
@@ -128,10 +124,10 @@ export const DashboardOverview = ({ userName }: any) => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 md:gap-6">
         <StatCard icon={HardHat} label="Obras em Execução" value={loading ? '...' : String(obrasExecucao.length)} color="blue" onClick={() => setModal('obras')} hint="Toque para listar" />
-        <StatCard icon={TrendingUp} label="Lucro Previsto" value={loading ? '...' : fmtBRL(lucroPrevisto)} color="emerald" hint={loading ? '' : `Orç.: ${fmtBRL(orcamentoAtivo)} • Gastos: ${fmtBRL(gastosAtivos)}`} />
-        <StatCard icon={BarChart3} label="Aportes Ativos" value={loading ? '...' : fmtBRL(gastosAtivos)} color="amber" hint="Soma dos gastos nas obras ativas" />
-        <StatCard icon={TrendingDown} label="Orçamento (Obras Ativas)" value={loading ? '...' : fmtBRL(orcamentoAtivo)} color="rose" hint="Soma do valor contratado das obras ativas" />
-        <StatCard icon={Calculator} label="Demandas Hoje" value={loading ? '...' : String(demandasHoje.length)} color="slate" onClick={() => setModal('demandas')} hint={loading ? '' : `${demandasHojeQtd.toFixed(2).replace('.', ',')} un • ${fmtBRL(demandasHojeTotal)}`} />
+        <StatCard icon={TrendingUp} label="Lucro Previsto" value={loading ? '...' : formatBRL(lucroPrevisto)} color="emerald" hint={loading ? '' : `Orç.: ${formatBRL(orcamentoAtivo)} • Gastos: ${formatBRL(gastosAtivos)}`} />
+        <StatCard icon={BarChart3} label="Aportes Ativos" value={loading ? '...' : formatBRL(gastosAtivos)} color="amber" hint="Soma dos gastos nas obras ativas" />
+        <StatCard icon={TrendingDown} label="Orçamento (Obras Ativas)" value={loading ? '...' : formatBRL(orcamentoAtivo)} color="rose" hint="Soma do valor contratado das obras ativas" />
+        <StatCard icon={Calculator} label="Demandas Hoje" value={loading ? '...' : String(demandasHoje.length)} color="slate" onClick={() => setModal('demandas')} hint={loading ? '' : `${demandasHojeQtd.toFixed(2).replace('.', ',')} un • ${formatBRL(demandasHojeTotal)}`} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
@@ -176,7 +172,7 @@ export const DashboardOverview = ({ userName }: any) => {
                           <div className="flex justify-between items-center">
                             <span className="text-[10px] font-black text-slate-400">{pct.toFixed(0)}%</span>
                             <span className="text-[10px] font-black text-slate-400">
-                              {fmtBRL(gas)} / {fmtBRL(orc)}
+                              {formatBRL(gas)} / {formatBRL(orc)}
                             </span>
                           </div>
                           <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -217,9 +213,9 @@ export const DashboardOverview = ({ userName }: any) => {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-3 text-[11px] font-black">
-                    <span className="px-3 py-1 rounded-xl bg-slate-50 text-slate-600">Orç.: {fmtBRL(orc)}</span>
-                    <span className="px-3 py-1 rounded-xl bg-rose-50 text-rose-600">Gastos: {fmtBRL(gas)}</span>
-                    <span className="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700">Lucro: {fmtBRL(lucro)}</span>
+                    <span className="px-3 py-1 rounded-xl bg-slate-50 text-slate-600">Orç.: {formatBRL(orc)}</span>
+                    <span className="px-3 py-1 rounded-xl bg-rose-50 text-rose-600">Gastos: {formatBRL(gas)}</span>
+                    <span className="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700">Lucro: {formatBRL(lucro)}</span>
                   </div>
                 </div>
               );
@@ -246,8 +242,8 @@ export const DashboardOverview = ({ userName }: any) => {
                   <span className="px-3 py-1 rounded-xl bg-slate-50 text-slate-600">
                     Qtd: {Number(l.quantidade || 0).toFixed(2).replace('.', ',')} {l?.tb_produto_servico?.unidade_medida || ''}
                   </span>
-                  <span className="px-3 py-1 rounded-xl bg-slate-50 text-slate-600">Unit: {fmtBRL(Number(l.preco_custo_aplicado || 0))}</span>
-                  <span className="px-3 py-1 rounded-xl bg-blue-50 text-blue-700">Total: {fmtBRL(Number(l.total_calculado || 0))}</span>
+                  <span className="px-3 py-1 rounded-xl bg-slate-50 text-slate-600">Unit: {formatBRL(Number(l.preco_custo_aplicado || 0))}</span>
+                  <span className="px-3 py-1 rounded-xl bg-blue-50 text-blue-700">Total: {formatBRL(Number(l.total_calculado || 0))}</span>
                 </div>
               </div>
             ))}

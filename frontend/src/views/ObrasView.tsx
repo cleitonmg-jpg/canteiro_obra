@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Building2, MapPin, Search, Edit2, Trash2, Calendar, HardHat, X, TrendingDown, TrendingUp, List, ChevronLeft, Save } from 'lucide-react';
 
 import { API } from '../config';
+import { formatBRL } from '../utils/format';
 
 interface Obra {
     id: number;
@@ -24,7 +25,7 @@ interface Lancamento {
     tb_produto_servico?: { id: number; codigo_interno: string; descricao: string; unidade_medida?: string };
 }
 
-const fmt = (v: number) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+const fmt = (v: number) => formatBRL(v);
 const formatData = (d?: string) => d ? new Date(d).toLocaleDateString('pt-BR') : '--';
 
 interface GrupoGasto {

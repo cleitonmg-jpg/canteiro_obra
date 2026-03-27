@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, Search, Calculator, CheckCircle2, List, X } from 'lucide-react';
 
 import { API } from '../config';
+import { formatBRL } from '../utils/format';
 
 interface Obra { id: number; nome: string; }
 interface Produto { id: number; codigo_interno: string; descricao: string; preco_custo: number; unidade_medida?: string; }
@@ -153,7 +154,7 @@ export const MovimentosView = () => {
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Custo</p>
-                                                <p className="text-sm font-black text-blue-600">R$ {Number(p.preco_custo || 0).toFixed(2).replace('.', ',')}</p>
+                                                <p className="text-sm font-black text-blue-600">{formatBRL(p.preco_custo || 0)}</p>
                                             </div>
                                         </div>
                                     </button>
@@ -217,7 +218,7 @@ export const MovimentosView = () => {
                                                 <p className="font-bold text-slate-800">{p.descricao}</p>
                                                 <div className="flex justify-between items-center mt-2">
                                                     <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">{p.codigo_interno}</span>
-                                                    <span className="text-xs font-black text-slate-600">R$ {Number(p.preco_custo).toFixed(2).replace('.', ',')}</span>
+                                                    <span className="text-xs font-black text-slate-600">{formatBRL(p.preco_custo)}</span>
                                                 </div>
                                             </div>
                                         )) : (
@@ -292,10 +293,10 @@ export const MovimentosView = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5 border-b border-slate-50 text-center text-sm font-medium text-slate-500">
-                                                {i.quantidade} <span className="text-slate-300 mx-1">x</span> R$ {i.precoUnit.toFixed(2).replace('.', ',')}
+                                                {i.quantidade} <span className="text-slate-300 mx-1">x</span> {formatBRL(i.precoUnit)}
                                             </td>
                                             <td className="px-6 py-5 border-b border-slate-50 text-right font-black text-slate-800 text-lg">
-                                                R$ {i.total.toFixed(2).replace('.', ',')}
+                                                {formatBRL(i.total)}
                                             </td>
                                             <td className="px-6 py-5 border-b border-slate-50 text-right">
                                                 <button onClick={() => setItens(itens.filter(x => x._key !== i._key))} className="text-slate-300 hover:text-red-500 p-2.5 opacity-0 group-hover:opacity-100 transition-all bg-white rounded-xl shadow-sm border border-slate-100">
@@ -312,7 +313,7 @@ export const MovimentosView = () => {
                     <div className="bg-slate-900 px-6 py-6 text-white shrink-0 rounded-[28px] shadow-lg shadow-slate-900/20">
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Total do Lançamento</span>
-                            <span className="text-3xl font-black tracking-tighter text-emerald-400">R$ {totalGeral.toFixed(2).replace('.', ',')}</span>
+                            <span className="text-3xl font-black tracking-tighter text-emerald-400">{formatBRL(totalGeral)}</span>
                         </div>
                         <button
                             onClick={handleFinalizar}
