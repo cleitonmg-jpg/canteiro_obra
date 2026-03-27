@@ -22,7 +22,7 @@ model tb_empresa {
 model tb_usuario {
   id              Int       @id @default(autoincrement())
   nome            String    @db.VarChar(100)
-  login           String    @unique @db.VarChar(50)
+  login           String    @unique @default("admin") @db.VarChar(50)
   email           String?   @unique @db.VarChar(100)
   senha           String    @db.VarChar(255)
   nivel_permissao String?   @default("OPERADOR") @db.VarChar(20)
