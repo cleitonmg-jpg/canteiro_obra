@@ -1,5 +1,8 @@
 [variables]
-NIXPACKS_NODE_VERSION = "20"
+NIXPACKS_NODE_VERSION = "22"
+
+[phases.setup]
+nixpkgsArchive = "3e2cf88148e732abc1d259286123e06a9d8c964a"
 
 [phases.install]
 cmds = [
