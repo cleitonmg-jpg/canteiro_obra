@@ -164,6 +164,56 @@ app.get('/api/obras', async (_req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+// Gastos agregados por grupo (para grÃ¡fico pizza no frontend)
+app.get('/api/obras/gastos-por-grupo', async (req, res) => {
+  try {
+    const { ativas } = req.query;
+    const whereObra = ativas === '1' ? { NOT: { status: 'FINALIZADA' } } : {};
+
+    const obras = await prisma.tb_obra.findMany({ where: whereObra, select: { id: true } });
+    const ids = obras.map(o => o.id);
+    if (!ids.length) return res.json([]);
+
+    const movs = await prisma.tb_movimentacao_obra.findMany({
+      where: { id_obra: { in: ids } },
+      select: {
+        id_obra: true,
+        total_calculado: true,
+        tb_produto_servico: {
+          select: {
+            tb_grupo: { select: { id: true, codigo: true, descricao: true } },
+          },
+        },
+      },
+    });
+
+    const byObra = new Map();
+    for (const m of movs) {
+      const obraId = m.id_obra;
+      if (!obraId) continue;
+      const total = parseFloat(String(m.total_calculado || 0)) || 0;
+      const g = m.tb_produto_servico?.tb_grupo;
+      const gid = g?.id ? Number(g.id) : 0;
+      const gkey = String(gid);
+      const info = g
+        ? { id: gid, codigo: g.codigo || '', descricao: g.descricao || '' }
+        : { id: 0, codigo: 'SEM', descricao: 'Sem Grupo' };
+
+      if (!byObra.has(obraId)) byObra.set(obraId, new Map());
+      const byGrupo = byObra.get(obraId);
+      if (!byGrupo.has(gkey)) byGrupo.set(gkey, { ...info, total: 0 });
+      byGrupo.get(gkey).total += total;
+    }
+
+    const result = Array.from(byObra.entries()).map(([id_obra, gruposMap]) => ({
+      id_obra,
+      grupos: Array.from(gruposMap.values()).sort((a, b) => b.total - a.total),
+    }));
+
+    res.json(result);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
 app.post('/api/obras', async (req, res) => {
   try {
     const { nome, endereco, responsavel, status, valor_contratado, data_inicio, data_termino, numero_licitacao, orgao_responsavel, tipo_orgao } = req.body;
