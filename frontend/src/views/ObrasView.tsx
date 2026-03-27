@@ -396,52 +396,52 @@ export const ObrasView = ({ buscaExterna }: any) => {
                             <p className="text-slate-400 font-medium">Cadastre um novo canteiro ou modifique a pesquisa.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                             {filtradas.map(o => {
                                 const lucro = (Number(o.valor_contratado) || 0) - (o.gastos || 0);
                                 const positivo = lucro >= 0;
                                 const pie = buildPie(gastosPorGrupo[o.id] || []);
                                 return (
-                                    <div key={o.id} className="bg-white border border-slate-200 rounded-[26px] p-5 shadow-sm hover:shadow-xl hover:shadow-slate-200 transition-all group border-b-4 border-b-blue-600 flex flex-col h-full">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="bg-blue-50 text-blue-600 p-2.5 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                                <Building2 size={20} />
+                                    <div key={o.id} className="bg-white border border-slate-200 rounded-[24px] p-4 shadow-sm hover:shadow-xl hover:shadow-slate-200 transition-all group border-b-4 border-b-blue-600 flex flex-col">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="bg-blue-50 text-blue-600 p-2 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                                <Building2 size={18} />
                                             </div>
                                             <div className="flex items-start gap-3">
-                                                <div title={pie.title} className="w-12 h-12 rounded-full flex items-center justify-center border border-slate-200 bg-white" style={{ background: pie.gradient }}>
-                                                    <div className="w-7 h-7 bg-white rounded-full border border-slate-100" />
+                                                <div title={pie.title} className="w-10 h-10 rounded-full flex items-center justify-center border border-slate-200 bg-white" style={{ background: pie.gradient }}>
+                                                    <div className="w-6 h-6 bg-white rounded-full border border-slate-100" />
                                                 </div>
                                                 <div className="flex flex-col items-end gap-2">
-                                                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${statusColor[o.status] || 'bg-slate-100 text-slate-600'}`}>{o.status}</span>
+                                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${statusColor[o.status] || 'bg-slate-100 text-slate-600'}`}>{o.status}</span>
                                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={() => handleEditar(o)} className="text-blue-600 bg-blue-50 p-2 rounded-lg hover:bg-blue-100"><Edit2 size={16} /></button>
-                                                        <button onClick={() => handleExcluir(o.id)} className="text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-100"><Trash2 size={16} /></button>
+                                                        <button onClick={() => handleEditar(o)} className="text-blue-600 bg-blue-50 p-1.5 rounded-lg hover:bg-blue-100"><Edit2 size={14} /></button>
+                                                        <button onClick={() => handleExcluir(o.id)} className="text-red-500 bg-red-50 p-1.5 rounded-lg hover:bg-red-100"><Trash2 size={14} /></button>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <h3 className="text-lg md:text-xl font-black text-slate-800 mb-1.5 truncate leading-tight" title={o.nome}>{o.nome}</h3>
+                                        <h3 className="text-base md:text-lg font-black text-slate-800 mb-1 truncate leading-tight" title={o.nome}>{o.nome}</h3>
 
-                                        <div className="space-y-3 mb-4 flex-1">
-                                            <div className="flex items-center gap-2 text-slate-500 text-xs font-bold">
+                                        <div className="space-y-2.5 mb-3">
+                                            <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold">
                                                 <MapPin size={14} className="text-slate-400 shrink-0" />
                                                 <span className="truncate">{o.endereco || 'Endereço não informado'}</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-slate-500 text-xs font-bold">
+                                            <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold">
                                                 <HardHat size={14} className="text-slate-400 shrink-0" />
                                                 <span className="truncate">{o.responsavel || 'Sem Resp. Técnico'}</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-slate-500 text-xs font-bold">
+                                            <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold">
                                                 <Calendar size={14} className="text-slate-400 shrink-0" />
                                                 {formatData(o.data_inicio)} até {formatData(o.data_termino)}
                                             </div>
                                         </div>
 
                                         {pie.legend.length > 0 && (
-                                            <div className="flex flex-wrap gap-3 mb-4">
+                                            <div className="flex flex-wrap gap-2.5 mb-3">
                                                 {pie.legend.slice(0, 2).map((it: any) => (
-                                                    <div key={it.label} className="flex items-center gap-2 text-[10px] font-black text-slate-500">
+                                                    <div key={it.label} className="flex items-center gap-2 text-[9px] font-black text-slate-500">
                                                         <span className="h-2.5 w-2.5 rounded-full" style={{ background: it.color }} />
                                                         <span className="max-w-[120px] truncate" title={it.label}>{it.label}</span>
                                                     </div>
@@ -449,26 +449,26 @@ export const ObrasView = ({ buscaExterna }: any) => {
                                             </div>
                                         )}
 
-                                        <div className="pt-4 border-t border-slate-100 space-y-2.5">
+                                        <div className="pt-3 border-t border-slate-100 space-y-2">
                                             <div className="flex justify-between items-center">
-                                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Orçamento</p>
-                                                <p className="text-slate-800 font-black text-sm">{fmt(Number(o.valor_contratado))}</p>
+                                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Orçamento</p>
+                                                <p className="text-slate-800 font-black text-xs">{fmt(Number(o.valor_contratado))}</p>
                                             </div>
                                             <div className="flex justify-between items-center">
-                                                <p className="text-red-400 text-xs font-bold uppercase tracking-widest">Gastos</p>
-                                                <p className="text-red-600 font-black text-sm">{fmt(o.gastos || 0)}</p>
+                                                <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest">Gastos</p>
+                                                <p className="text-red-600 font-black text-xs">{fmt(o.gastos || 0)}</p>
                                             </div>
                                             <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                                                 <div className="flex items-center gap-1.5">
                                                     {positivo ? <TrendingUp size={14} className="text-emerald-500" /> : <TrendingDown size={14} className="text-red-500" />}
-                                                    <p className={`text-xs font-black uppercase tracking-widest ${positivo ? 'text-emerald-500' : 'text-red-500'}`}>Lucro</p>
+                                                    <p className={`text-[10px] font-black uppercase tracking-widest ${positivo ? 'text-emerald-500' : 'text-red-500'}`}>Lucro</p>
                                                 </div>
-                                                <p className={`font-black text-base ${positivo ? 'text-emerald-600' : 'text-red-600'}`}>{fmt(lucro)}</p>
+                                                <p className={`font-black text-sm ${positivo ? 'text-emerald-600' : 'text-red-600'}`}>{fmt(lucro)}</p>
                                             </div>
                                             {/* Botão ver lançamentos */}
                                             <button
                                                 onClick={() => abrirLancamentos(o)}
-                                                className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 font-black text-xs rounded-xl transition-all"
+                                                className="w-full mt-2 flex items-center justify-center gap-2 py-2 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 font-black text-[11px] rounded-xl transition-all"
                                             >
                                                 <List size={14} /> VER LANÇAMENTOS
                                             </button>
