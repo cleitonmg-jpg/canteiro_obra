@@ -27,16 +27,18 @@ const StatCard = ({ icon: Icon, label, value, color, onClick, hint }: any) => {
   return (
     <Comp
       onClick={onClick}
-      className={`bg-white p-5 md:p-6 rounded-[28px] border border-slate-200 shadow-sm transition-all hover:shadow-xl hover:shadow-slate-100 ${
+      className={`bg-white p-4 md:p-5 rounded-[24px] border border-slate-200 shadow-sm transition-all hover:shadow-xl hover:shadow-slate-100 ${
         clickable ? 'text-left cursor-pointer hover:border-blue-300' : ''
       }`}
     >
-      <div className={`p-3 rounded-2xl w-fit mb-4 transition-transform ${colorClasses[color]}`}>
-        <Icon size={22} />
+      <div className="flex items-center gap-3">
+        <div className={`p-2.5 rounded-2xl w-fit transition-transform ${colorClasses[color]}`}>
+          <Icon size={18} />
+        </div>
+        <p className="text-xs font-black text-slate-700 tracking-tight leading-none">{label}</p>
       </div>
-      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
-      <h4 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tighter leading-none">{value}</h4>
-      {hint && <p className="text-[11px] text-slate-400 font-bold mt-2">{hint}</p>}
+      <h4 className="mt-3 text-xl md:text-2xl font-black text-slate-900 tracking-tighter leading-none">{value}</h4>
+      {hint && <p className="text-[11px] text-slate-400 font-bold mt-1.5">{hint}</p>}
     </Comp>
   );
 };

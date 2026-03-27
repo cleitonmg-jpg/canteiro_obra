@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Building2, 
   Construction, 
@@ -18,6 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { API } from '../config';
 
 import { DashboardOverview } from '../views/DashboardOverview';
 import { EmpresaView } from '../views/EmpresaView';
@@ -47,12 +48,90 @@ const DashboardPage: React.FC = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    const [globalSearch, setGlobalSearch] = useState('');
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searchData, setSearchData] = useState<{ obras: any[]; produtos: any[]; grupos: any[] } | null>(null);
+
+    const [buscaObrasExterna, setBuscaObrasExterna] = useState('');
+    const [buscaProdutosExterna, setBuscaProdutosExterna] = useState('');
+    const [buscaGruposExterna, setBuscaGruposExterna] = useState('');
     const userName = localStorage.getItem('user_name') || 'Usuário';
 
     const handleLogout = () => {
         localStorage.clear();
         navigate('/');
     };
+
+    const carregarSearchData = async () => {
+        if (searchData) return searchData;
+        setSearchLoading(true);
+        try {
+            const [obrasRes, produtosRes, gruposRes] = await Promise.all([
+                fetch(`${API}/api/obras`),
+                fetch(`${API}/api/produtos`),
+                fetch(`${API}/api/grupos`),
+            ]);
+            const data = {
+                obras: obrasRes.ok ? await obrasRes.json() : [],
+                produtos: produtosRes.ok ? await produtosRes.json() : [],
+                grupos: gruposRes.ok ? await gruposRes.json() : [],
+            };
+            setSearchData(data);
+            return data;
+        } finally {
+            setSearchLoading(false);
+        }
+    };
+
+    const aplicarBuscaNaAba = (termo: string) => {
+        if (activeTab === 'obras') setBuscaObrasExterna(termo);
+        if (activeTab === 'produtos') setBuscaProdutosExterna(termo);
+        if (activeTab === 'grupos') setBuscaGruposExterna(termo);
+    };
+
+    const selecionarResultado = (r: any) => {
+        const termo = globalSearch.trim();
+        setSearchOpen(false);
+        if (r?.type === 'obra') { setActiveTab('obras'); setBuscaObrasExterna(termo); }
+        if (r?.type === 'produto') { setActiveTab('produtos'); setBuscaProdutosExterna(termo); }
+        if (r?.type === 'grupo') { setActiveTab('grupos'); setBuscaGruposExterna(termo); }
+    };
+
+    useEffect(() => {
+        const termo = globalSearch.trim();
+        if (termo.length < 2) {
+            setSearchOpen(false);
+            setSearchResults([]);
+            return;
+        }
+        setSearchOpen(true);
+        const id = setTimeout(async () => {
+            const base = await carregarSearchData();
+            const q = termo.toLowerCase();
+
+            const obras = base.obras
+                .filter((o: any) => String(o.nome || '').toLowerCase().includes(q) || String(o.id || '').includes(q))
+                .slice(0, 5)
+                .map((o: any) => ({ type: 'obra', id: o.id, title: o.nome, subtitle: `OB-${String(o.id).padStart(3, '0')} • ${o.status || ''}` }));
+
+            const produtos = base.produtos
+                .filter((p: any) => String(p.descricao || '').toLowerCase().includes(q) || String(p.codigo_interno || '').toLowerCase().includes(q))
+                .slice(0, 5)
+                .map((p: any) => ({ type: 'produto', id: p.id, title: p.descricao, subtitle: `${p.codigo_interno || ''} • ${p.tipo || ''}` }));
+
+            const grupos = base.grupos
+                .filter((g: any) => String(g.descricao || '').toLowerCase().includes(q) || String(g.codigo || '').toLowerCase().includes(q))
+                .slice(0, 5)
+                .map((g: any) => ({ type: 'grupo', id: g.id, title: g.descricao, subtitle: `${g.codigo || ''}` }));
+
+            setSearchResults([...obras, ...produtos, ...grupos]);
+        }, 250);
+
+        return () => clearTimeout(id);
+    }, [globalSearch]);
 
     return (
         <div className="min-h-screen bg-slate-50 flex">
@@ -134,13 +213,56 @@ const DashboardPage: React.FC = () => {
                             <Menu size={18} />
                         </button>
 
-                        <div className="flex items-center gap-4 bg-slate-100/50 border border-slate-200 px-4 md:px-5 py-2.5 rounded-2xl w-full md:w-96 group focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 transition-all">
+                        <div className="relative flex items-center gap-3 bg-slate-100/50 border border-slate-200 px-4 md:px-5 py-2.5 rounded-2xl w-full md:w-96 group focus-within:bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 transition-all">
                         <Search size={18} className="text-slate-400 group-focus-within:text-blue-500" />
                         <input 
-                            type="text" 
+                            type="text"
+                            value={globalSearch}
+                            onChange={(e) => setGlobalSearch(e.target.value)}
+                            onFocus={() => { if (globalSearch.trim().length >= 2) setSearchOpen(true); }}
+                            onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+                            onKeyDown={(e) => {
+                                if (e.key !== 'Enter') return;
+                                e.preventDefault();
+                                const termo = globalSearch.trim();
+                                if (termo.length < 2) return;
+                                if (activeTab === 'dashboard') {
+                                    if (searchResults[0]) selecionarResultado(searchResults[0]);
+                                } else {
+                                    aplicarBuscaNaAba(termo);
+                                    setSearchOpen(false);
+                                }
+                            }}
                             placeholder="Buscar no sistema... (Cód/Desc)" 
                             className="bg-transparent border-none focus:outline-none w-full text-sm font-semibold text-slate-700"
                         />
+
+                        {searchOpen && globalSearch.trim().length >= 2 && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-20">
+                                {searchLoading ? (
+                                    <div className="p-4 text-sm font-bold text-slate-500">Carregando...</div>
+                                ) : searchResults.length === 0 ? (
+                                    <div className="p-4 text-sm font-bold text-slate-500">Sem resultados.</div>
+                                ) : (
+                                    <div className="max-h-80 overflow-auto">
+                                        {searchResults.map((r: any) => (
+                                            <button
+                                                key={`${r.type}-${r.id}`}
+                                                type="button"
+                                                onMouseDown={() => selecionarResultado(r)}
+                                                className="w-full text-left p-4 hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <p className="font-black text-slate-800 truncate">{r.title}</p>
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">{r.type}</span>
+                                                </div>
+                                                {r.subtitle && <p className="text-xs font-bold text-slate-500 mt-1 truncate">{r.subtitle}</p>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                     </div>
 
@@ -166,9 +288,9 @@ const DashboardPage: React.FC = () => {
                 <div className="p-4 md:p-10 pb-16 md:pb-20">
                     {activeTab === 'dashboard' && <DashboardOverview userName={userName} />}
                     {activeTab === 'empresa' && <EmpresaView onSaved={() => setActiveTab('dashboard')} />}
-                    {activeTab === 'obras' && <ObrasView />}
-                    {activeTab === 'grupos' && <GruposView />}
-                    {activeTab === 'produtos' && <ProdutosView />}
+                    {activeTab === 'obras' && <ObrasView buscaExterna={buscaObrasExterna} />}
+                    {activeTab === 'grupos' && <GruposView buscaExterna={buscaGruposExterna} />}
+                    {activeTab === 'produtos' && <ProdutosView buscaExterna={buscaProdutosExterna} />}
                     {activeTab === 'movimentos' && <MovimentosView />}
                     {activeTab === 'relatorios' && <RelatoriosView />}
                     {activeTab === 'usuarios' && <UsuariosView />}

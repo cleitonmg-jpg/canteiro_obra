@@ -36,7 +36,7 @@ const statusColor: Record<string, string> = {
     'FINALIZADA': 'bg-emerald-100 text-emerald-700',
 };
 
-export const ObrasView = () => {
+export const ObrasView = ({ buscaExterna }: any) => {
     const [obras, setObras] = useState<Obra[]>([]);
     const [viewForm, setViewForm] = useState(false);
     const [busca, setBusca] = useState('');
@@ -69,6 +69,10 @@ export const ObrasView = () => {
     };
 
     useEffect(() => { carregar(); }, []);
+
+    useEffect(() => {
+        if (typeof buscaExterna === 'string') setBusca(buscaExterna);
+    }, [buscaExterna]);
 
     const abrirLancamentos = async (obra: Obra) => {
         setObraDetalhe(obra);

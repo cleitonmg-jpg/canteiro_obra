@@ -20,7 +20,7 @@ interface Produto {
     tb_grupo?: Grupo | null;
 }
 
-export const ProdutosView = () => {
+export const ProdutosView = ({ buscaExterna }: any) => {
     const [viewForm, setViewForm] = useState(false);
     const [produtos, setProdutos] = useState<Produto[]>([]);
     const [grupos, setGrupos] = useState<Grupo[]>([]);
@@ -50,6 +50,10 @@ export const ProdutosView = () => {
     };
 
     useEffect(() => { carregar(); }, []);
+
+    useEffect(() => {
+        if (typeof buscaExterna === 'string') setBusca(buscaExterna);
+    }, [buscaExterna]);
 
     const resetForm = () => {
         setEditId(null);

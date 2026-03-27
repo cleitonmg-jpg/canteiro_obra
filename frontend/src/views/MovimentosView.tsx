@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, Calculator, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Search, Calculator, CheckCircle2, List, X } from 'lucide-react';
 
 import { API } from '../config';
 
@@ -21,6 +21,8 @@ export const MovimentosView = () => {
     const [itens, setItens] = useState<ItemCesta[]>([]);
     const [buscaProduto, setBuscaProduto] = useState('');
     const [showResults, setShowResults] = useState(false);
+    const [catalogOpen, setCatalogOpen] = useState(false);
+    const [catalogBusca, setCatalogBusca] = useState('');
     const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null);
     const [quantidade, setQuantidade] = useState('1');
     const [precoUnit, setPrecoUnit] = useState('');
@@ -42,6 +44,11 @@ export const MovimentosView = () => {
     const produtosFiltrados = produtos.filter(p =>
         p.descricao.toLowerCase().includes(buscaProduto.toLowerCase()) ||
         (p.codigo_interno || '').toLowerCase().includes(buscaProduto.toLowerCase())
+    );
+
+    const produtosCatalogoFiltrados = produtos.filter(p =>
+        p.descricao.toLowerCase().includes(catalogBusca.toLowerCase()) ||
+        (p.codigo_interno || '').toLowerCase().includes(catalogBusca.toLowerCase())
     );
 
     const handleSelectProduto = (p: Produto) => {
@@ -106,6 +113,62 @@ export const MovimentosView = () => {
                 </div>
             )}
 
+            {catalogOpen && (
+                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+                    <button type="button" aria-label="Fechar" onClick={() => setCatalogOpen(false)} className="absolute inset-0 bg-slate-900/40" />
+                    <div className="relative bg-white w-full md:w-[900px] max-h-[85vh] overflow-hidden rounded-t-3xl md:rounded-3xl border border-slate-200 shadow-2xl">
+                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-lg font-black text-slate-800">Catálogo de Itens e Serviços</h3>
+                            <button type="button" onClick={() => setCatalogOpen(false)} className="p-2 rounded-xl hover:bg-slate-50 text-slate-500 hover:text-slate-900">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4 overflow-auto max-h-[calc(85vh-64px)]">
+                            <div className="bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl flex items-center gap-3 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-50 transition-all">
+                                <Search size={18} className="text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por código ou descrição..."
+                                    className="bg-transparent border-none outline-none w-full font-bold text-sm text-slate-700"
+                                    value={catalogBusca}
+                                    onChange={(e) => setCatalogBusca(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                {produtosCatalogoFiltrados.slice(0, 80).map((p) => (
+                                    <button
+                                        key={p.id}
+                                        type="button"
+                                        onClick={() => { handleSelectProduto(p); setCatalogOpen(false); }}
+                                        className="w-full text-left p-4 border border-slate-200 rounded-2xl hover:border-blue-400 hover:bg-slate-50 transition-all"
+                                    >
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="font-black text-slate-800">{p.descricao}</p>
+                                                <p className="text-xs font-bold text-slate-500 mt-1">
+                                                    {p.codigo_interno} {p.unidade_medida ? `• ${p.unidade_medida}` : ''}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Custo</p>
+                                                <p className="text-sm font-black text-blue-600">R$ {Number(p.preco_custo || 0).toFixed(2).replace('.', ',')}</p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                                {produtosCatalogoFiltrados.length > 80 && (
+                                    <p className="text-xs font-bold text-slate-400 text-center pt-2">
+                                        Refine a busca para ver mais resultados.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Esquerda */}
                 <div className="lg:col-span-1 space-y-8">
@@ -132,7 +195,16 @@ export const MovimentosView = () => {
                         <h3 className="text-xl font-black text-slate-800 border-b border-slate-100 pb-4">Adicionar Item</h3>
                         {!produtoSelecionado ? (
                             <div className="relative">
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 block mb-2">Buscar Produto/Serviço</label>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 block">Buscar Produto/Serviço</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setCatalogBusca(''); setCatalogOpen(true); }}
+                                        className="flex items-center gap-2 text-xs font-black text-slate-500 hover:text-blue-600 bg-white border border-slate-200 hover:border-blue-500 px-3 py-1.5 rounded-xl transition-all"
+                                    >
+                                        <List size={14} /> CATÁLOGO
+                                    </button>
+                                </div>
                                 <div className="bg-slate-50 border border-slate-200 px-4 py-3.5 rounded-xl flex items-center gap-3 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-50 transition-all">
                                     <Search size={20} className="text-slate-400" />
                                     <input type="text" placeholder="Código ou descrição..." className="bg-transparent border-none outline-none w-full font-bold text-sm text-slate-700"
@@ -237,16 +309,16 @@ export const MovimentosView = () => {
                         )}
                     </div>
 
-                    <div className="bg-slate-900 px-8 py-10 text-white shrink-0">
-                        <div className="flex justify-between items-center mb-6">
+                    <div className="bg-slate-900 px-6 py-6 text-white shrink-0 rounded-[28px] shadow-lg shadow-slate-900/20">
+                        <div className="flex justify-between items-center mb-4">
                             <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Total do Lançamento</span>
-                            <span className="text-5xl font-black tracking-tighter text-emerald-400">R$ {totalGeral.toFixed(2).replace('.', ',')}</span>
+                            <span className="text-3xl font-black tracking-tighter text-emerald-400">R$ {totalGeral.toFixed(2).replace('.', ',')}</span>
                         </div>
                         <button
                             onClick={handleFinalizar}
                             disabled={itens.length === 0 || carregando || !obraId}
-                            className={`w-full ${itens.length > 0 && obraId ? 'bg-blue-600 hover:bg-blue-500 shadow-xl shadow-blue-900/50' : 'bg-slate-800 text-slate-500 cursor-not-allowed'} text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 active:scale-95 transition-all`}>
-                            <CheckCircle2 size={24} />
+                            className={`w-full ${itens.length > 0 && obraId ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/30' : 'bg-slate-800 text-slate-500 cursor-not-allowed'} text-white py-3.5 rounded-2xl font-black text-base md:text-lg flex items-center justify-center gap-3 active:scale-95 transition-all`}>
+                            <CheckCircle2 size={18} />
                             {carregando ? 'SALVANDO...' : 'FINALIZAR LANÇAMENTO'}
                         </button>
                     </div>

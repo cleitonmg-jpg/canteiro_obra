@@ -9,7 +9,7 @@ interface Grupo {
     descricao: string;
 }
 
-export const GruposView = () => {
+export const GruposView = ({ buscaExterna }: any) => {
     const [grupos, setGrupos] = useState<Grupo[]>([]);
     const [descricao, setDescricao] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
@@ -28,6 +28,10 @@ export const GruposView = () => {
     };
 
     useEffect(() => { carregar(); }, []);
+
+    useEffect(() => {
+        if (typeof buscaExterna === 'string') setBusca(buscaExterna);
+    }, [buscaExterna]);
 
     const handleSalvar = async (e: React.FormEvent) => {
         e.preventDefault();
