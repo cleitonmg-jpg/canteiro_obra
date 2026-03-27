@@ -44,7 +44,7 @@ const gerarCodigoProduto = async (tipo) => {
 };
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
-app.get('/', (_req, res) => res.json({ message: 'Backend Canteiro de Obras Ativo', developer: 'V9 INFORMÁTICA LTDA - (37) 4141-0341', status: 'ONLINE' }));
+app.get('/api/health', (_req, res) => res.json({ message: 'Backend Canteiro de Obras Ativo', developer: 'V9 INFORMÁTICA LTDA - (37) 4141-0341', status: 'ONLINE' }));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EMPRESA (registro único)
