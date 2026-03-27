@@ -226,13 +226,37 @@ app.get('/api/lancamentos', async (req, res) => {
     const { id_obra } = req.query;
     const where = id_obra ? { id_obra: parseInt(id_obra) } : {};
     const lancamentos = await prisma.tb_movimentacao_obra.findMany({
-      where, orderBy: { data_movimentacao: 'desc' },
+      where, orderBy: { data_movimentacao: 'asc' },
       include: {
         tb_obra: { select: { id: true, nome: true } },
-        tb_produto_servico: { select: { id: true, codigo_interno: true, descricao: true } },
+        tb_produto_servico: { select: { id: true, codigo_interno: true, descricao: true, unidade_medida: true } },
       },
     });
     res.json(lancamentos);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.put('/api/lancamentos/:id', async (req, res) => {
+  try {
+    const { quantidade, preco_custo_aplicado } = req.body;
+    const q = parseFloat(quantidade);
+    const p = parseFloat(preco_custo_aplicado);
+    if (isNaN(q) || isNaN(p)) return res.status(400).json({ erro: 'Quantidade e preço inválidos' });
+    const item = await prisma.tb_movimentacao_obra.update({
+      where: { id: parseInt(req.params.id) },
+      data: { quantidade: q, preco_custo_aplicado: p, total_calculado: q * p },
+      include: {
+        tb_produto_servico: { select: { id: true, codigo_interno: true, descricao: true, unidade_medida: true } },
+      },
+    });
+    res.json(item);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.delete('/api/lancamentos/:id', async (req, res) => {
+  try {
+    await prisma.tb_movimentacao_obra.delete({ where: { id: parseInt(req.params.id) } });
+    res.json({ mensagem: 'Lançamento excluído' });
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 

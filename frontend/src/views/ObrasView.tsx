@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Building2, MapPin, Search, Edit2, Trash2, Calendar, HardHat, X, TrendingDown, TrendingUp } from 'lucide-react';
+import { Plus, Building2, MapPin, Search, Edit2, Trash2, Calendar, HardHat, X, TrendingDown, TrendingUp, List, ChevronLeft, Save } from 'lucide-react';
 
 const API = 'http://localhost:3000';
 
@@ -15,7 +15,16 @@ interface Obra {
     gastos: number;
 }
 
-const formatMoeda = (v: number) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+interface Lancamento {
+    id: number;
+    quantidade: number;
+    preco_custo_aplicado: number;
+    total_calculado: number;
+    data_movimentacao: string;
+    tb_produto_servico?: { id: number; codigo_interno: string; descricao: string; unidade_medida?: string };
+}
+
+const fmt = (v: number) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
 const formatData = (d?: string) => d ? new Date(d).toLocaleDateString('pt-BR') : '--';
 
 const statusColor: Record<string, string> = {
@@ -34,6 +43,15 @@ export const ObrasView = () => {
     const [carregando, setCarregando] = useState(false);
     const [erro, setErro] = useState('');
 
+    // Painel de lançamentos
+    const [obraDetalhe, setObraDetalhe] = useState<Obra | null>(null);
+    const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
+    const [editandoItem, setEditandoItem] = useState<Lancamento | null>(null);
+    const [editQtd, setEditQtd] = useState('');
+    const [editPreco, setEditPreco] = useState('');
+    const [salvandoItem, setSalvandoItem] = useState(false);
+
+    // Form obra
     const [editId, setEditId] = useState<number | null>(null);
     const [nome, setNome] = useState('');
     const [endereco, setEndereco] = useState('');
@@ -47,12 +65,51 @@ export const ObrasView = () => {
         try {
             const res = await fetch(`${API}/api/obras`);
             setObras(await res.json());
-        } catch {
-            setErro('Não foi possível conectar ao servidor.');
-        }
+        } catch { setErro('Não foi possível conectar ao servidor.'); }
     };
 
     useEffect(() => { carregar(); }, []);
+
+    const abrirLancamentos = async (obra: Obra) => {
+        setObraDetalhe(obra);
+        const res = await fetch(`${API}/api/lancamentos?id_obra=${obra.id}`);
+        setLancamentos(await res.json());
+    };
+
+    const fecharDetalhe = () => { setObraDetalhe(null); setLancamentos([]); setEditandoItem(null); };
+
+    const iniciarEdicaoItem = (l: Lancamento) => {
+        setEditandoItem(l);
+        setEditQtd(String(l.quantidade));
+        setEditPreco(String(l.preco_custo_aplicado));
+    };
+
+    const salvarEdicaoItem = async () => {
+        if (!editandoItem) return;
+        setSalvandoItem(true);
+        try {
+            const res = await fetch(`${API}/api/lancamentos/${editandoItem.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quantidade: parseFloat(editQtd), preco_custo_aplicado: parseFloat(editPreco) }),
+            });
+            if (!res.ok) throw new Error();
+            const atualizado = await res.json();
+            setLancamentos(lancamentos.map(l => l.id === editandoItem.id ? { ...l, ...atualizado } : l));
+            setEditandoItem(null);
+            await carregar(); // atualiza gastos no card
+        } catch { setErro('Erro ao salvar lançamento.'); }
+        finally { setSalvandoItem(false); }
+    };
+
+    const excluirItem = async (id: number) => {
+        if (!window.confirm('Excluir este lançamento?')) return;
+        try {
+            await fetch(`${API}/api/lancamentos/${id}`, { method: 'DELETE' });
+            setLancamentos(lancamentos.filter(l => l.id !== id));
+            await carregar();
+        } catch { setErro('Erro ao excluir lançamento.'); }
+    };
 
     const resetForm = () => {
         setEditId(null); setNome(''); setEndereco(''); setInicio(''); setTermino('');
@@ -62,21 +119,16 @@ export const ObrasView = () => {
 
     const handleSalvar = async (e: React.FormEvent) => {
         e.preventDefault();
-        setCarregando(true);
-        setErro('');
+        setCarregando(true); setErro('');
         try {
             const body = { nome, endereco, responsavel, status, valor_contratado: valorContratado, data_inicio: inicio || null, data_termino: termino || null };
             const res = editId
                 ? await fetch(`${API}/api/obras/${editId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
                 : await fetch(`${API}/api/obras`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             if (!res.ok) throw new Error();
-            await carregar();
-            resetForm();
-        } catch {
-            setErro('Erro ao salvar. Verifique a conexão.');
-        } finally {
-            setCarregando(false);
-        }
+            await carregar(); resetForm();
+        } catch { setErro('Erro ao salvar. Verifique a conexão.'); }
+        finally { setCarregando(false); }
     };
 
     const handleEditar = (o: Obra) => {
@@ -90,16 +142,116 @@ export const ObrasView = () => {
 
     const handleExcluir = async (id: number) => {
         if (!window.confirm('Certeza que deseja excluir esta obra?')) return;
-        try {
-            await fetch(`${API}/api/obras/${id}`, { method: 'DELETE' });
-            await carregar();
-        } catch {
-            setErro('Erro ao excluir obra.');
-        }
+        try { await fetch(`${API}/api/obras/${id}`, { method: 'DELETE' }); await carregar(); }
+        catch { setErro('Erro ao excluir obra.'); }
     };
 
     const filtradas = obras.filter(o => o.nome.toLowerCase().includes(busca.toLowerCase()));
+    const totalLancamentos = lancamentos.reduce((a, l) => a + parseFloat(String(l.total_calculado || 0)), 0);
 
+    // ── Painel de lançamentos ──────────────────────────────────────────────────
+    if (obraDetalhe) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center gap-4 bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
+                    <button onClick={fecharDetalhe} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-black bg-slate-100 hover:bg-blue-50 px-4 py-2.5 rounded-xl transition-all">
+                        <ChevronLeft size={18} /> VOLTAR
+                    </button>
+                    <div className="flex-1">
+                        <h2 className="text-2xl font-black text-slate-800">{obraDetalhe.nome}</h2>
+                        <p className="text-slate-400 font-bold text-sm mt-0.5">Lançamentos registrados</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Total Gasto</p>
+                        <p className="text-2xl font-black text-red-600">{fmt(totalLancamentos)}</p>
+                    </div>
+                </div>
+
+                {erro && <div className="bg-red-50 border border-red-200 text-red-700 font-bold px-6 py-4 rounded-2xl">{erro}</div>}
+
+                <div className="bg-white border border-slate-200 rounded-[32px] overflow-hidden shadow-sm">
+                    {lancamentos.length === 0 ? (
+                        <div className="py-16 text-center text-slate-400 font-bold">Nenhum lançamento registrado nesta obra.</div>
+                    ) : (
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                                <tr>
+                                    <th className="px-6 py-5">Data</th>
+                                    <th className="px-6 py-5">Código</th>
+                                    <th className="px-6 py-5">Produto / Serviço</th>
+                                    <th className="px-6 py-5 text-center">Quantidade</th>
+                                    <th className="px-6 py-5 text-right">Preço Unit.</th>
+                                    <th className="px-6 py-5 text-right">Total</th>
+                                    <th className="px-6 py-5 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {lancamentos.map(l => (
+                                    <tr key={l.id} className="hover:bg-slate-50/50 transition-colors">
+                                        {editandoItem?.id === l.id ? (
+                                            <>
+                                                <td className="px-6 py-4 text-xs text-slate-400 font-bold">{new Date(l.data_movimentacao).toLocaleDateString('pt-BR')}</td>
+                                                <td className="px-6 py-4 text-blue-600 font-black text-xs">{l.tb_produto_servico?.codigo_interno}</td>
+                                                <td className="px-6 py-4 font-bold text-slate-700">{l.tb_produto_servico?.descricao}</td>
+                                                <td className="px-6 py-4">
+                                                    <input type="number" step="0.001" value={editQtd} onChange={e => setEditQtd(e.target.value)}
+                                                        className="w-24 px-3 py-2 bg-blue-50 border border-blue-300 rounded-xl text-slate-800 font-bold text-center focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <input type="number" step="0.01" value={editPreco} onChange={e => setEditPreco(e.target.value)}
+                                                        className="w-28 px-3 py-2 bg-blue-50 border border-blue-300 rounded-xl text-blue-700 font-black text-right focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                                                </td>
+                                                <td className="px-6 py-4 text-right font-black text-slate-700">
+                                                    {fmt((parseFloat(editQtd) || 0) * (parseFloat(editPreco) || 0))}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <button onClick={salvarEdicaoItem} disabled={salvandoItem} className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs transition-all">
+                                                            <Save size={14} /> {salvandoItem ? '...' : 'SALVAR'}
+                                                        </button>
+                                                        <button onClick={() => setEditandoItem(null)} className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs transition-all">
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <td className="px-6 py-4 text-xs text-slate-400 font-bold">{new Date(l.data_movimentacao).toLocaleDateString('pt-BR')}</td>
+                                                <td className="px-6 py-4 text-blue-600 font-black text-xs">{l.tb_produto_servico?.codigo_interno}</td>
+                                                <td className="px-6 py-4 font-bold text-slate-700">{l.tb_produto_servico?.descricao}</td>
+                                                <td className="px-6 py-4 text-center font-bold text-slate-600">
+                                                    {Number(l.quantidade).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}
+                                                    {l.tb_produto_servico?.unidade_medida && <span className="text-slate-400 ml-1 text-xs">{l.tb_produto_servico.unidade_medida}</span>}
+                                                </td>
+                                                <td className="px-6 py-4 text-right font-bold text-slate-600">{fmt(parseFloat(String(l.preco_custo_aplicado)))}</td>
+                                                <td className="px-6 py-4 text-right font-black text-slate-800">{fmt(parseFloat(String(l.total_calculado)))}</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <button onClick={() => iniciarEdicaoItem(l)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"><Edit2 size={16} /></button>
+                                                        <button onClick={() => excluirItem(l.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 size={16} /></button>
+                                                    </div>
+                                                </td>
+                                            </>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                            <tfoot className="bg-slate-50 border-t-2 border-slate-200">
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">{lancamentos.length} item(ns)</td>
+                                    <td className="px-6 py-5 text-right font-black text-red-600 text-xl">{fmt(totalLancamentos)}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // ── Lista de obras ─────────────────────────────────────────────────────────
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
@@ -123,11 +275,8 @@ export const ObrasView = () => {
                             <Building2 className="text-blue-500" />
                             {editId ? 'Editando Obra Registrada' : 'Cadastrando Novo Canteiro / Licitação'}
                         </h3>
-                        <button type="button" onClick={resetForm} className="text-slate-400 hover:text-red-500 transition-colors p-2 bg-slate-50 rounded-xl">
-                            <X size={20} />
-                        </button>
+                        <button type="button" onClick={resetForm} className="text-slate-400 hover:text-red-500 p-2 bg-slate-50 rounded-xl"><X size={20} /></button>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2 space-y-2">
                             <label className="text-sm font-bold text-slate-700 ml-1">Nome / Título da Obra</label>
@@ -166,9 +315,8 @@ export const ObrasView = () => {
                             </div>
                         </div>
                     </div>
-
                     <div className="flex justify-end pt-4 border-t border-slate-100">
-                        <button type="submit" disabled={carregando} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-10 py-4 rounded-xl font-black text-lg shadow-lg flex items-center gap-2 transform active:scale-95 transition-all">
+                        <button type="submit" disabled={carregando} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-10 py-4 rounded-xl font-black text-lg shadow-lg flex items-center gap-2 active:scale-95 transition-all">
                             SALVAR OBRA
                         </button>
                     </div>
@@ -226,19 +374,26 @@ export const ObrasView = () => {
                                         <div className="pt-4 border-t border-slate-100 space-y-3">
                                             <div className="flex justify-between items-center">
                                                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Orçamento</p>
-                                                <p className="text-slate-800 font-black text-base">{formatMoeda(Number(o.valor_contratado))}</p>
+                                                <p className="text-slate-800 font-black text-base">{fmt(Number(o.valor_contratado))}</p>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <p className="text-red-400 text-xs font-bold uppercase tracking-widest">Gastos</p>
-                                                <p className="text-red-600 font-black text-base">{formatMoeda(o.gastos || 0)}</p>
+                                                <p className="text-red-600 font-black text-base">{fmt(o.gastos || 0)}</p>
                                             </div>
                                             <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                                                 <div className="flex items-center gap-1.5">
                                                     {positivo ? <TrendingUp size={14} className="text-emerald-500" /> : <TrendingDown size={14} className="text-red-500" />}
-                                                    <p className={`text-xs font-black uppercase tracking-widest ${positivo ? 'text-emerald-500' : 'text-red-500'}`}>Lucro Previsto</p>
+                                                    <p className={`text-xs font-black uppercase tracking-widest ${positivo ? 'text-emerald-500' : 'text-red-500'}`}>Lucro</p>
                                                 </div>
-                                                <p className={`font-black text-lg ${positivo ? 'text-emerald-600' : 'text-red-600'}`}>{formatMoeda(lucro)}</p>
+                                                <p className={`font-black text-lg ${positivo ? 'text-emerald-600' : 'text-red-600'}`}>{fmt(lucro)}</p>
                                             </div>
+                                            {/* Botão ver lançamentos */}
+                                            <button
+                                                onClick={() => abrirLancamentos(o)}
+                                                className="w-full mt-2 flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 font-black text-xs rounded-xl transition-all"
+                                            >
+                                                <List size={14} /> VER LANÇAMENTOS
+                                            </button>
                                         </div>
                                     </div>
                                 );
