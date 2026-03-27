@@ -121,8 +121,8 @@ export const UsuariosView = () => {
                             <input required type="text" placeholder="Nome do usuário" value={nome} onChange={e => setNome(e.target.value)} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium" />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-slate-700 ml-1">E-mail (login)</label>
-                            <input required type="email" placeholder="usuario@email.com" value={email} onChange={e => setEmail(e.target.value)} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium" />
+                            <label className="text-sm font-bold text-slate-700 ml-1">E-mail <span className="text-slate-400 font-medium">(opcional)</span></label>
+                            <input type="email" placeholder="usuario@email.com" value={email} onChange={e => setEmail(e.target.value)} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium" />
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 ml-1">{editId ? 'Nova Senha (opcional)' : 'Senha'}</label>
@@ -179,7 +179,7 @@ export const UsuariosView = () => {
                                         <span className="font-bold text-slate-800">{u.nome}</span>
                                     </div>
                                 </td>
-                                <td className="px-8 py-5 text-slate-500 font-medium">{u.email}</td>
+                                <td className="px-8 py-5 text-slate-500 font-medium">{u.email || <span className="text-slate-300">—</span>}</td>
                                 <td className="px-8 py-5">
                                     <span className={`px-3 py-1 rounded-full text-xs font-black ${(nivelLabel[u.nivel_permissao] || nivelLabel.OPERADOR).cls}`}>
                                         {(nivelLabel[u.nivel_permissao] || nivelLabel.OPERADOR).label}
