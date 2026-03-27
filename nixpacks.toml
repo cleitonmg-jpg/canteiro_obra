@@ -17,4 +17,4 @@ cmds = [
 ]
 
 [start]
-cmd = "cd backend && npx prisma db push --skip-generate && node src/index.js"
+cmd = "cd backend && npx prisma db push --skip-generate --accept-data-loss && node src/index.js"
