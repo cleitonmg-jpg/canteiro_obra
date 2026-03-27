@@ -127,8 +127,8 @@ export const DashboardOverview = ({ userName }: any) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 md:gap-6">
         <StatCard icon={HardHat} label="Obras em Execução" value={loading ? '...' : String(obrasExecucao.length)} color="blue" onClick={() => setModal('obras')} hint="Toque para listar" />
         <StatCard icon={TrendingUp} label="Lucro Previsto" value={loading ? '...' : fmtBRL(lucroPrevisto)} color="emerald" hint={loading ? '' : `Orç.: ${fmtBRL(orcamentoAtivo)} • Gastos: ${fmtBRL(gastosAtivos)}`} />
-        <StatCard icon={BarChart3} label="Aportes Ativos" value={loading ? '...' : fmtBRL(orcamentoAtivo)} color="amber" hint="Soma do orçamento das obras ativas" />
-        <StatCard icon={TrendingDown} label="Gastos (Obras Ativas)" value={loading ? '...' : fmtBRL(gastosAtivos)} color="rose" hint="Soma de todos os lançamentos" />
+        <StatCard icon={BarChart3} label="Aportes Ativos" value={loading ? '...' : fmtBRL(gastosAtivos)} color="amber" hint="Soma dos gastos nas obras ativas" />
+        <StatCard icon={TrendingDown} label="Orçamento (Obras Ativas)" value={loading ? '...' : fmtBRL(orcamentoAtivo)} color="rose" hint="Soma do valor contratado das obras ativas" />
         <StatCard icon={Calculator} label="Demandas Hoje" value={loading ? '...' : String(demandasHoje.length)} color="slate" onClick={() => setModal('demandas')} hint={loading ? '' : `${demandasHojeQtd.toFixed(2).replace('.', ',')} un • ${fmtBRL(demandasHojeTotal)}`} />
       </div>
 
@@ -255,4 +255,3 @@ export const DashboardOverview = ({ userName }: any) => {
     </div>
   );
 };
-
