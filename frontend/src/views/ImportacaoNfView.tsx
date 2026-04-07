@@ -108,6 +108,8 @@ export const ImportacaoNfView = () => {
   const [produtoPreco, setProdutoPreco] = useState('');
   const [produtoGrupoId, setProdutoGrupoId] = useState('');
   const [itemEmFoco, setItemEmFoco] = useState<number | null>(null);
+  const [modalExcluir, setModalExcluir] = useState<{ id: number; nome: string } | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   const carregarImportacoes = async () => {
     const res = await fetch(`${API}/api/nf-importacoes`);
@@ -224,15 +226,21 @@ export const ImportacaoNfView = () => {
     }
   };
 
-  const handleExcluirImportacao = async (id: number, nome: string) => {
-    if (!window.confirm(`Excluir a importação "${nome}"?\n\nOs vínculos e itens serão removidos. Esta ação não pode ser desfeita.`)) return;
+  const handleExcluirImportacao = async () => {
+    if (!modalExcluir) return;
+    setExcluindo(true);
     try {
-      const res = await fetch(`${API}/api/nf-importacoes/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API}/api/nf-importacoes/${modalExcluir.id}`, { method: 'DELETE' });
       if (!res.ok) { const d = await res.json(); throw new Error(d.erro); }
-      if (selecionada?.id === id) setSelecionada(null);
-      await carregarImportacoes();
+      if (selecionada?.id === modalExcluir.id) { setSelecionada(null); setVinculos({}); }
+      const lista = await carregarImportacoes();
+      setImportacoes(lista);
+      setModalExcluir(null);
     } catch (err: any) {
-      alert(err.message || 'Erro ao excluir importação.');
+      setErro(err.message || 'Erro ao excluir importação.');
+      setModalExcluir(null);
+    } finally {
+      setExcluindo(false);
     }
   };
 
@@ -350,6 +358,7 @@ export const ImportacaoNfView = () => {
   };
 
   return (
+    <>
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm">
         <div>
@@ -423,7 +432,7 @@ export const ImportacaoNfView = () => {
                 <div className="px-5 pb-3 flex justify-end">
                   <button
                     type="button"
-                    onClick={() => handleExcluirImportacao(item.id, item.nome_emitente || item.nome_arquivo_original)}
+                    onClick={() => setModalExcluir({ id: item.id, nome: item.nome_emitente || item.nome_arquivo_original })}
                     className="flex items-center gap-1.5 text-xs font-black text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-xl transition-all"
                   >
                     <Trash2 size={13} /> EXCLUIR
@@ -749,5 +758,48 @@ export const ImportacaoNfView = () => {
         </div>
       </div>
     </div>
+
+    {/* ── MODAL CONFIRMAR EXCLUSÃO ── */}
+    {modalExcluir && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}>
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 space-y-6 animate-fade-in">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center">
+              <Trash2 size={22} className="text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-800">Excluir importação?</h3>
+              <p className="text-sm text-slate-500 font-medium mt-0.5">Esta ação não pode ser desfeita.</p>
+            </div>
+          </div>
+
+          <div className="bg-red-50 border border-red-100 rounded-2xl px-5 py-4">
+            <p className="text-sm font-black text-red-700 truncate">{modalExcluir.nome}</p>
+            <p className="text-xs text-red-400 font-medium mt-1">Todos os itens e vínculos serão removidos permanentemente.</p>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setModalExcluir(null)}
+              disabled={excluindo}
+              className="flex-1 py-3 rounded-2xl border border-slate-200 text-slate-600 font-black hover:bg-slate-50 transition-all disabled:opacity-50"
+            >
+              CANCELAR
+            </button>
+            <button
+              type="button"
+              onClick={handleExcluirImportacao}
+              disabled={excluindo}
+              className="flex-1 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              <Trash2 size={16} />
+              {excluindo ? 'EXCLUINDO...' : 'SIM, EXCLUIR'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
