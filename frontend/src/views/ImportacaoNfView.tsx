@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, FileArchive, FileSpreadsheet, FileUp, Link2, PackagePlus, RefreshCw, Save, Tags, Trash2 } from 'lucide-react';
+import { CheckCircle2, FileArchive, FileSpreadsheet, FileUp, Link2, PackagePlus, RefreshCw, Save, Search, Tags, Trash2, X } from 'lucide-react';
 
 import { API } from '../config';
 import { formatBRL } from '../utils/format';
@@ -68,6 +68,7 @@ interface ImportacaoDetalhe extends ImportacaoResumo {
 
 interface VinculoEditado {
   id_produto_servico_vinculado: string;
+  id_grupo_novo: string;
   observacao: string;
 }
 
@@ -91,6 +92,7 @@ const lerArquivoComoBase64 = (file: File) => new Promise<string>((resolve, rejec
 export const ImportacaoNfView = () => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [importacoes, setImportacoes] = useState<ImportacaoResumo[]>([]);
+  const [busca, setBusca] = useState('');
   const [selecionada, setSelecionada] = useState<ImportacaoDetalhe | null>(null);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [grupos, setGrupos] = useState<Grupo[]>([]);
@@ -108,6 +110,7 @@ export const ImportacaoNfView = () => {
   const [produtoPreco, setProdutoPreco] = useState('');
   const [produtoGrupoId, setProdutoGrupoId] = useState('');
   const [itemEmFoco, setItemEmFoco] = useState<number | null>(null);
+  const [salvandoItem, setSalvandoItem] = useState<number | null>(null);
   const [modalExcluir, setModalExcluir] = useState<{ id: number; nome: string } | null>(null);
   const [excluindo, setExcluindo] = useState(false);
 
@@ -139,6 +142,7 @@ export const ImportacaoNfView = () => {
     for (const item of data.itens || []) {
       nextVinculos[item.id] = {
         id_produto_servico_vinculado: item.produto_vinculado?.id ? String(item.produto_vinculado.id) : '',
+        id_grupo_novo: '',
         observacao: item.observacao || '',
       };
     }
@@ -175,6 +179,17 @@ export const ImportacaoNfView = () => {
   useEffect(() => {
     recarregarTudo(false);
   }, []);
+
+  const importacoesFiltradas = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    if (!q) return importacoes;
+    return importacoes.filter(i =>
+      (i.numero_nf || '').toLowerCase().includes(q) ||
+      (i.nome_emitente || '').toLowerCase().includes(q) ||
+      (i.cnpj_emitente || '').toLowerCase().includes(q) ||
+      (i.nome_arquivo_original || '').toLowerCase().includes(q)
+    );
+  }, [importacoes, busca]);
 
   const totais = useMemo(() => {
     if (!selecionada) return { resolvidos: 0, pendentes: 0 };
@@ -278,6 +293,57 @@ export const ImportacaoNfView = () => {
     }
   };
 
+  const salvarItemUnico = async (item: ImportacaoItem) => {
+    if (!selecionada) return;
+    setSalvandoItem(item.id);
+    setErro(''); setSucesso('');
+    try {
+      const vinculo = vinculos[item.id] || { id_produto_servico_vinculado: '', id_grupo_novo: '', observacao: '' };
+      let idProduto = vinculo.id_produto_servico_vinculado;
+
+      // Se não selecionou produto existente mas selecionou grupo → cria o produto automaticamente
+      if (!idProduto && vinculo.id_grupo_novo) {
+        const resProd = await fetch(`${API}/api/produtos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tipo: 'PRODUTO',
+            descricao: item.descricao,
+            unidade_medida: item.unidade || '',
+            preco_custo: Number(item.valor_unitario_final || item.valor_unitario_original || 0),
+            id_grupo: Number(vinculo.id_grupo_novo),
+          }),
+        });
+        const prodBody = await resProd.json().catch(() => ({}));
+        if (!resProd.ok) throw new Error(prodBody.erro || 'Erro ao criar produto.');
+        idProduto = String(prodBody.id);
+        // Atualiza estado local com o produto criado
+        setVinculos(cur => ({ ...cur, [item.id]: { ...cur[item.id], id_produto_servico_vinculado: idProduto } }));
+        const catalogos = await carregarCatalogos();
+        setProdutos(catalogos.produtos);
+        setGrupos(catalogos.grupos);
+      }
+
+      const res = await fetch(`${API}/api/nf-importacoes/${selecionada.id}/vinculos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itens: [{ id: item.id, id_produto_servico_vinculado: idProduto || null, observacao: vinculo.observacao || '' }],
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.erro || 'Erro ao salvar vínculo.');
+      setSelecionada(body);
+      const lista = await carregarImportacoes();
+      setImportacoes(lista);
+      setSucesso(`Item "${item.descricao.slice(0, 40)}..." gravado com sucesso.`);
+    } catch (e: any) {
+      setErro(e?.message || 'Erro ao salvar item.');
+    } finally {
+      setSalvandoItem(null);
+    }
+  };
+
   const preencherCadastroRapido = (item: ImportacaoItem) => {
     setItemEmFoco(item.id);
     setTipoNovo('PRODUTO');
@@ -341,7 +407,7 @@ export const ImportacaoNfView = () => {
         setVinculos((current) => ({
           ...current,
           [itemEmFoco]: {
-            ...(current[itemEmFoco] || { observacao: '' }),
+            ...(current[itemEmFoco] || { observacao: '', id_grupo_novo: '' }),
             id_produto_servico_vinculado: String(body.id),
           },
         }));
@@ -392,17 +458,36 @@ export const ImportacaoNfView = () => {
 
       <div className="grid grid-cols-1 xl:grid-cols-[340px,minmax(0,1fr)] gap-8">
         <aside className="bg-white border border-slate-200 rounded-[28px] shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-            <h3 className="text-lg font-black text-slate-800">Notas Importadas</h3>
-            <span className="text-xs font-black text-slate-400">{importacoes.length} arquivo(s)</span>
+          <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/60 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-black text-slate-800">Notas Importadas</h3>
+              <span className="text-xs font-black text-slate-400">{importacoesFiltradas.length}/{importacoes.length}</span>
+            </div>
+            <div className="relative">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={busca}
+                onChange={e => setBusca(e.target.value)}
+                placeholder="Nº NF, fornecedor, CNPJ..."
+                className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-50"
+              />
+              {busca && (
+                <button onClick={() => setBusca('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="max-h-[780px] overflow-y-auto divide-y divide-slate-100">
             {carregando ? (
               <div className="p-6 text-slate-400 font-bold">Carregando...</div>
-            ) : importacoes.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 font-bold">Nenhuma nota importada ainda.</div>
-            ) : importacoes.map((item) => (
+            ) : importacoesFiltradas.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 font-bold">
+                {busca ? `Nenhuma nota encontrada para "${busca}".` : 'Nenhuma nota importada ainda.'}
+              </div>
+            ) : importacoesFiltradas.map((item) => (
               <div
                 key={item.id}
                 className={`w-full text-left transition-all ${selecionada?.id === item.id ? 'bg-blue-50/70' : 'hover:bg-slate-50'}`}
@@ -585,27 +670,28 @@ export const ImportacaoNfView = () => {
                                   )}
                                 </div>
                               </td>
-                              <td className="px-5 py-5 min-w-[360px]">
+                              <td className="px-5 py-5 min-w-[380px]">
                                 <div className="space-y-3">
                                   {item.sugestao_historica && item.produto_vinculado && (
                                     <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-2xl px-4 py-3 text-xs font-black flex items-center gap-2">
                                       <CheckCircle2 size={14} />
-                                      Sugestão histórica encontrada: {item.produto_vinculado.codigo_interno}
+                                      Sugestão: {item.produto_vinculado.codigo_interno}
                                     </div>
                                   )}
 
+                                  {/* Produto existente */}
                                   <select
                                     value={vinculos[item.id]?.id_produto_servico_vinculado || ''}
                                     onChange={(e) => setVinculos((current) => ({
                                       ...current,
                                       [item.id]: {
-                                        ...(current[item.id] || { observacao: '' }),
+                                        ...(current[item.id] || { observacao: '', id_grupo_novo: '' }),
                                         id_produto_servico_vinculado: e.target.value,
                                       },
                                     }))}
-                                    className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+                                    className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 text-sm"
                                   >
-                                    <option value="">Selecionar produto/serviço...</option>
+                                    <option value="">— Selecionar produto existente —</option>
                                     {produtos.map((produto) => (
                                       <option key={produto.id} value={produto.id}>
                                         {produto.codigo_interno} • {produto.descricao}
@@ -613,12 +699,55 @@ export const ImportacaoNfView = () => {
                                     ))}
                                   </select>
 
-                                  {vinculos[item.id]?.id_produto_servico_vinculado && (
-                                    <div className="text-xs font-black text-slate-500 flex items-center gap-2">
-                                      <Link2 size={14} />
-                                      Vínculo pronto para histórico do fornecedor.
+                                  {/* Grupo para novo produto (visível quando nenhum produto selecionado) */}
+                                  {!vinculos[item.id]?.id_produto_servico_vinculado && (
+                                    <div className="space-y-1">
+                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                        Ou criar novo produto no grupo:
+                                      </p>
+                                      <select
+                                        value={vinculos[item.id]?.id_grupo_novo || ''}
+                                        onChange={(e) => setVinculos((current) => ({
+                                          ...current,
+                                          [item.id]: {
+                                            ...(current[item.id] || { id_produto_servico_vinculado: '', observacao: '' }),
+                                            id_grupo_novo: e.target.value,
+                                          },
+                                        }))}
+                                        className="w-full bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 font-bold text-slate-700 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-50 text-sm"
+                                      >
+                                        <option value="">— Nenhum (deixar pendente) —</option>
+                                        {grupos.map((g) => (
+                                          <option key={g.id} value={g.id}>
+                                            {g.codigo} • {g.descricao}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      {vinculos[item.id]?.id_grupo_novo && (
+                                        <p className="text-[11px] font-bold text-amber-600 ml-1 flex items-center gap-1">
+                                          <PackagePlus size={12} /> Produto será criado automaticamente ao salvar
+                                        </p>
+                                      )}
                                     </div>
                                   )}
+
+                                  {vinculos[item.id]?.id_produto_servico_vinculado && (
+                                    <div className="text-xs font-black text-emerald-600 flex items-center gap-2">
+                                      <Link2 size={13} /> Produto vinculado
+                                    </div>
+                                  )}
+
+                                  {/* Botão salvar item */}
+                                  <button
+                                    type="button"
+                                    onClick={() => salvarItemUnico(item)}
+                                    disabled={salvandoItem === item.id || (!vinculos[item.id]?.id_produto_servico_vinculado && !vinculos[item.id]?.id_grupo_novo)}
+                                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl font-black text-sm transition-all
+                                      bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                                  >
+                                    <Save size={14} />
+                                    {salvandoItem === item.id ? 'SALVANDO...' : 'SALVAR ESTE ITEM'}
+                                  </button>
                                 </div>
                               </td>
                               <td className="px-5 py-5 min-w-[260px]">
@@ -627,7 +756,7 @@ export const ImportacaoNfView = () => {
                                   onChange={(e) => setVinculos((current) => ({
                                     ...current,
                                     [item.id]: {
-                                      ...(current[item.id] || { id_produto_servico_vinculado: '' }),
+                                      ...(current[item.id] || { id_produto_servico_vinculado: '', id_grupo_novo: '' }),
                                       observacao: e.target.value,
                                     },
                                   }))}
