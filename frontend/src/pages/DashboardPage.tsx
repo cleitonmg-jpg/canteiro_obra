@@ -22,6 +22,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { API } from '../config';
 import { useEmpresaNome } from '../hooks/useEmpresaNome';
+import { APP_BUILD } from '../version';
 
 import { DashboardOverview } from '../views/DashboardOverview';
 import { EmpresaView } from '../views/EmpresaView';
@@ -229,14 +230,17 @@ const DashboardPage: React.FC = () => {
                     <NavItem icon={FileText} label="Auditoria" active={activeTab === 'auditoria'} onClick={() => handleTabChange('auditoria')} />
                 </nav>
 
-                <div className="p-6 border-t border-slate-100 bg-slate-50/50">
-                    <button 
+                <div className="p-6 border-t border-slate-100 bg-slate-50/50 space-y-3">
+                    <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-4 py-3.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all font-bold text-sm"
                     >
                         <LogOut size={18} />
                         Desconectar
                     </button>
+                    <p className="text-center text-[10px] font-bold text-slate-300 tracking-widest select-none">
+                        BUILD {APP_BUILD}
+                    </p>
                 </div>
             </aside>
 
