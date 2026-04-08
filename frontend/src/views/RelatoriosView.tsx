@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Building2, RefreshCw, ChevronDown, ChevronRight, Edit2, Trash2, Save, X, Printer } from 'lucide-react';
-
+import { TrendingUp, TrendingDown, Building2, RefreshCw, ChevronDown, ChevronRight, Edit2, Trash2, Save, X, Printer, FolderOpen } from 'lucide-react';
 import { API } from '../config';
 import { formatBRL } from '../utils/format';
+import { DEFAULT_OBRA_FILTRO_STATUS, matchesObraFiltroStatus, OBRA_FILTRO_STATUS_OPTIONS, obraFiltroLabel, type ObraFiltroStatus } from '../utils/obraStatus';
 
 interface ResumoObra {
     id: number;
@@ -23,6 +23,17 @@ interface Lancamento {
     tb_produto_servico?: { id: number; codigo_interno: string; descricao: string; unidade_medida?: string };
 }
 
+interface ResumoCanteiro {
+    id: number;
+    nome: string;
+    responsavel?: string;
+    totalOrcamento: number;
+    totalGastos: number;
+    lucro: number;
+    qtd_obras: number;
+    obras: ResumoObra[];
+}
+
 const fmt = (v: number) => formatBRL(v);
 
 const statusColor: Record<string, string> = {
@@ -36,8 +47,12 @@ const statusColor: Record<string, string> = {
 
 export const RelatoriosView = () => {
     const [dados, setDados] = useState<ResumoObra[]>([]);
+    const [canteiros, setCanteiros] = useState<ResumoCanteiro[]>([]);
+    const [abaAtiva, setAbaAtiva] = useState<'canteiros' | 'obras'>('canteiros');
     const [carregando, setCarregando] = useState(false);
     const [erro, setErro] = useState('');
+    const [expandidoCanteiro, setExpandidoCanteiro] = useState<number | null>(null);
+    const [filtroStatusObra, setFiltroStatusObra] = useState<ObraFiltroStatus>(DEFAULT_OBRA_FILTRO_STATUS);
 
     // Linha expandida e seus lançamentos
     const [expandida, setExpandida] = useState<number | null>(null);
@@ -53,8 +68,12 @@ export const RelatoriosView = () => {
     const carregar = async () => {
         setCarregando(true); setErro('');
         try {
-            const res = await fetch(`${API}/api/relatorios/custos-por-obra`);
-            setDados(await res.json());
+            const [obrasRes, cantRes] = await Promise.all([
+                fetch(`${API}/api/relatorios/custos-por-obra`),
+                fetch(`${API}/api/relatorios/custos-por-canteiro`),
+            ]);
+            setDados(await obrasRes.json());
+            if (cantRes.ok) setCanteiros(await cantRes.json());
         } catch { setErro('Não foi possível conectar ao servidor.'); }
         finally { setCarregando(false); }
     };
@@ -110,8 +129,24 @@ export const RelatoriosView = () => {
         } catch { setErro('Erro ao excluir lançamento.'); }
     };
 
-    const totalOrcamento = dados.reduce((a, d) => a + d.orcamento, 0);
-    const totalGastos = dados.reduce((a, d) => a + d.gastos, 0);
+    const dadosFiltrados = dados.filter((d) => matchesObraFiltroStatus(d.status, filtroStatusObra));
+    const canteirosFiltrados = canteiros.map((c) => {
+        const obrasFiltradas = (c.obras || []).filter((o) => matchesObraFiltroStatus(o.status, filtroStatusObra));
+        const totalOrcamento = obrasFiltradas.reduce((acc, o) => acc + (Number(o.orcamento) || 0), 0);
+        const totalGastos = obrasFiltradas.reduce((acc, o) => acc + (Number(o.gastos) || 0), 0);
+        const lucro = totalOrcamento - totalGastos;
+        return {
+            ...c,
+            obras: obrasFiltradas,
+            qtd_obras: obrasFiltradas.length,
+            totalOrcamento,
+            totalGastos,
+            lucro,
+        };
+    });
+
+    const totalOrcamento = dadosFiltrados.reduce((a, d) => a + d.orcamento, 0);
+    const totalGastos = dadosFiltrados.reduce((a, d) => a + d.gastos, 0);
     const totalLucro = totalOrcamento - totalGastos;
 
     return (
@@ -128,17 +163,171 @@ export const RelatoriosView = () => {
 
             {erro && <div className="bg-red-50 border border-red-200 text-red-700 font-bold px-6 py-4 rounded-2xl">{erro}</div>}
 
-            {/* Cards resumo */}
+            {/* Abas: Canteiros | Obras + filtro */}
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl w-fit">
+                    <button
+                        onClick={() => setAbaAtiva('canteiros')}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm transition-all ${
+                            abaAtiva === 'canteiros' ? 'bg-white text-blue-700 shadow-md' : 'text-slate-500 hover:text-slate-800'
+                        }`}>
+                        <FolderOpen size={16} /> Por Canteiro
+                    </button>
+                    <button
+                        onClick={() => setAbaAtiva('obras')}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm transition-all ${
+                            abaAtiva === 'obras' ? 'bg-white text-blue-700 shadow-md' : 'text-slate-500 hover:text-slate-800'
+                        }`}>
+                        <Building2 size={16} /> Por Obra
+                    </button>
+                </div>
+
+                <div className="bg-white px-4 py-2.5 rounded-2xl shadow-sm border border-slate-200/60 max-w-md flex items-center gap-3">
+                    <Building2 size={16} className="text-blue-500 shrink-0" />
+                    <select
+                        value={filtroStatusObra}
+                        onChange={(e) => setFiltroStatusObra(e.target.value as ObraFiltroStatus)}
+                        className="bg-transparent border-none outline-none w-full font-bold text-sm text-slate-700"
+                        title={`Filtro de obras: ${obraFiltroLabel(filtroStatusObra)}`}
+                    >
+                        {OBRA_FILTRO_STATUS_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {/* Painel de Canteiros */}
+            {abaAtiva === 'canteiros' && (
+                <div className="space-y-4">
+
+                    {/* Cards de totais de canteiros */}
+                    {canteirosFiltrados.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Total Orçado (filtro)</p>
+                                <p className="text-3xl font-black text-slate-800">{fmt(canteirosFiltrados.reduce((a, c) => a + c.totalOrcamento, 0))}</p>
+                                <p className="text-xs text-slate-400 font-bold mt-2">{canteirosFiltrados.reduce((a, c) => a + c.qtd_obras, 0)} obra(s)</p>
+                            </div>
+                            <div className="bg-white p-8 rounded-[32px] border border-red-100 shadow-sm">
+                                <p className="text-xs font-black text-red-400 uppercase tracking-widest mb-2">Total Gasto</p>
+                                <p className="text-3xl font-black text-red-600">{fmt(canteirosFiltrados.reduce((a, c) => a + c.totalGastos, 0))}</p>
+                            </div>
+                            <div className="bg-white p-8 rounded-[32px] border border-emerald-100 shadow-sm">
+                                <p className="text-xs font-black text-emerald-500 uppercase tracking-widest mb-2">Lucro Previsto (Total)</p>
+                                <p className={`text-3xl font-black ${canteirosFiltrados.reduce((a, c) => a + c.lucro, 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                    {fmt(canteirosFiltrados.reduce((a, c) => a + c.lucro, 0))}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Canteiros expansíveis */}
+                    {canteirosFiltrados.map(c => {
+                        const aberto = expandidoCanteiro === c.id;
+                        return (
+                            <div key={c.id} className={`bg-white border rounded-[24px] shadow-sm overflow-hidden transition-all ${aberto ? 'border-blue-300' : 'border-slate-200'}`}>
+                                <button onClick={() => setExpandidoCanteiro(aberto ? null : c.id)}
+                                    className="w-full flex items-center gap-5 p-5 text-left hover:bg-slate-50/50 transition-colors">
+                                    <div className={`p-2.5 rounded-xl shrink-0 ${aberto ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600'}`}>
+                                        <FolderOpen size={20} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`font-black text-lg ${aberto ? 'text-blue-700' : 'text-slate-800'}`}>{c.nome}</p>
+                                        <p className="text-xs font-bold text-slate-400">{c.responsavel || '—'} • {c.qtd_obras} obra(s)</p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-4 shrink-0 mr-4">
+                                        <div className="text-right">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Orçamento</p>
+                                            <p className="text-sm font-black text-slate-700">{fmt(c.totalOrcamento)}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[9px] font-black text-red-400 uppercase tracking-widest">Gastos</p>
+                                            <p className="text-sm font-black text-red-600">{fmt(c.totalGastos)}</p>
+                                        </div>
+                                        <div className={`text-right px-3 py-1.5 rounded-xl ${c.lucro >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
+                                            <p className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1 justify-end ${c.lucro >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                                                {c.lucro >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />} Lucro
+                                            </p>
+                                            <p className={`text-sm font-black ${c.lucro >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{fmt(c.lucro)}</p>
+                                        </div>
+                                    </div>
+                                    {aberto ? <ChevronDown size={18} className="text-blue-600 shrink-0" /> : <ChevronRight size={18} className="text-slate-400 shrink-0" />}
+                                </button>
+
+                                {aberto && c.obras.length > 0 && (
+                                    <div className="border-t border-blue-100 bg-blue-50/30 overflow-x-auto">
+                                        <table className="w-full text-left text-sm">
+                                            <thead className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-blue-100/50">
+                                                <tr>
+                                                    <th className="px-6 py-3">Obra</th>
+                                                    <th className="px-6 py-3">Status</th>
+                                                    <th className="px-6 py-3 text-right">Orçamento</th>
+                                                    <th className="px-6 py-3 text-right">Gastos</th>
+                                                    <th className="px-6 py-3 text-right">Lucro</th>
+                                                    <th className="px-6 py-3 text-center">Itens</th>
+                                                    <th className="px-6 py-3"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-blue-100">
+                                                {c.obras.map(o => (
+                                                    <tr key={o.id} className="hover:bg-white/60 transition-colors">
+                                                        <td className="px-6 py-3.5 font-bold text-slate-800">{o.nome}</td>
+                                                        <td className="px-6 py-3.5">
+                                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${statusColor[o.status] || 'bg-slate-100 text-slate-600'}`}>{o.status}</span>
+                                                        </td>
+                                                        <td className="px-6 py-3.5 text-right font-bold text-slate-700">{fmt(o.orcamento)}</td>
+                                                        <td className="px-6 py-3.5 text-right font-bold text-red-500">{fmt(o.gastos)}</td>
+                                                        <td className={`px-6 py-3.5 text-right font-black ${o.lucro >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{fmt(o.lucro)}</td>
+                                                        <td className="px-6 py-3.5 text-center text-xs font-black text-slate-500">{o.qtd_lancamentos}</td>
+                                                        <td className="px-6 py-3.5">
+                                                            <button onClick={() => window.open(`/relatorio-obra/${o.id}`, '_blank')}
+                                                                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all">
+                                                                <Printer size={12} /> Imprimir
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                            <tfoot className="bg-blue-100 border-t-2 border-blue-200">
+                                                <tr>
+                                                    <td colSpan={2} className="px-6 py-3 text-xs font-black text-blue-700 uppercase">TOTAL</td>
+                                                    <td className="px-6 py-3 text-right font-black text-slate-800">{fmt(c.totalOrcamento)}</td>
+                                                    <td className="px-6 py-3 text-right font-black text-red-700">{fmt(c.totalGastos)}</td>
+                                                    <td className={`px-6 py-3 text-right font-black ${c.lucro >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{fmt(c.lucro)}</td>
+                                                    <td colSpan={2}></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                )}
+                                {aberto && c.obras.length === 0 && (
+                                    <div className="px-6 py-8 text-center text-slate-400 font-bold border-t border-blue-100">Nenhuma obra vinculada.</div>
+                                )}
+                            </div>
+                        );
+                    })}
+                    {canteirosFiltrados.length === 0 && !carregando && (
+                        <div className="bg-white rounded-[32px] border border-slate-200 p-12 text-center text-slate-400 font-bold">
+                            Nenhum canteiro cadastrado. Acesse o menu "Canteiros de Obras" para criar.
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Painel de Obras (visão original) */}
+            {abaAtiva === 'obras' && (
+            <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
                     <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Total Orçado</p>
                     <p className="text-3xl font-black text-slate-800">{fmt(totalOrcamento)}</p>
-                    <p className="text-xs text-slate-400 font-bold mt-2">{dados.length} obra(s)</p>
+                    <p className="text-xs text-slate-400 font-bold mt-2">{dadosFiltrados.length} obra(s)</p>
                 </div>
                 <div className="bg-white p-8 rounded-[32px] border border-red-100 shadow-sm">
                     <p className="text-xs font-black text-red-400 uppercase tracking-widest mb-2">Total Gasto</p>
                     <p className="text-3xl font-black text-red-600">{fmt(totalGastos)}</p>
-                    <p className="text-xs text-slate-400 font-bold mt-2">{dados.reduce((a, d) => a + d.qtd_lancamentos, 0)} lançamento(s)</p>
+                    <p className="text-xs text-slate-400 font-bold mt-2">{dadosFiltrados.reduce((a, d) => a + d.qtd_lancamentos, 0)} lançamento(s)</p>
                 </div>
                 <div className={`p-8 rounded-[32px] border shadow-sm ${totalLucro >= 0 ? 'bg-white border-emerald-100' : 'bg-white border-red-100'}`}>
                     <p className={`text-xs font-black uppercase tracking-widest mb-2 ${totalLucro >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>Lucro Previsto</p>
@@ -174,11 +363,11 @@ export const RelatoriosView = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {dados.length === 0 ? (
+                            {dadosFiltrados.length === 0 ? (
                                 <tr><td colSpan={8} className="px-8 py-12 text-center text-slate-400 font-bold">
                                     {carregando ? 'Carregando...' : 'Nenhuma obra encontrada.'}
                                 </td></tr>
-                            ) : dados.map(d => (
+                            ) : dadosFiltrados.map(d => (
                                 <>
                                     {/* Linha da obra */}
                                     <tr key={d.id}
@@ -314,6 +503,8 @@ export const RelatoriosView = () => {
                     </table>
                 </div>
             </div>
+            </div>
+            )}
         </div>
     );
 };

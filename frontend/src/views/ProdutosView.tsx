@@ -21,7 +21,13 @@ interface Produto {
     tb_grupo?: Grupo | null;
 }
 
-export const ProdutosView = ({ buscaExterna }: any) => {
+type ProdutosViewProps = {
+    buscaExterna?: string;
+    cadastroDescricaoExterna?: string;
+    onCadastroDescricaoConsumida?: () => void;
+};
+
+export const ProdutosView = ({ buscaExterna, cadastroDescricaoExterna, onCadastroDescricaoConsumida }: ProdutosViewProps) => {
     const [viewForm, setViewForm] = useState(false);
     const [produtos, setProdutos] = useState<Produto[]>([]);
     const [grupos, setGrupos] = useState<Grupo[]>([]);
@@ -55,6 +61,18 @@ export const ProdutosView = ({ buscaExterna }: any) => {
     useEffect(() => {
         if (typeof buscaExterna === 'string') setBusca(buscaExterna);
     }, [buscaExterna]);
+
+    useEffect(() => {
+        if (typeof cadastroDescricaoExterna !== 'string' || !cadastroDescricaoExterna.trim()) return;
+        setEditId(null);
+        setTipo('PRODUTO');
+        setDescricao(cadastroDescricaoExterna.trim());
+        setUnidade('UN');
+        setPreco('0');
+        setIdGrupo('');
+        setViewForm(true);
+        onCadastroDescricaoConsumida?.();
+    }, [cadastroDescricaoExterna, onCadastroDescricaoConsumida]);
 
     const resetForm = () => {
         setEditId(null);

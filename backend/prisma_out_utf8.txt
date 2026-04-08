@@ -1,4 +1,4 @@
-﻿node.exe : Prisma schema 
+node.exe : Prisma schema 
 loaded from 
 prisma\schema.prisma.
 No C:\Program 

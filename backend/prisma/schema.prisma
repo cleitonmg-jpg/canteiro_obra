@@ -54,8 +54,24 @@ model tb_produto_servico {
   tb_movimentacao_obra tb_movimentacao_obra[]
 }
 
+// Canteiro de Obras: entidade PAI que agrupa múltiplas obras
+model tb_canteiro {
+  id            Int       @id @default(autoincrement())
+  nome          String    @db.VarChar(200)
+  endereco      String?
+  responsavel   String?   @db.VarChar(100)
+  descricao     String?
+  ativo         Boolean?  @default(true)
+  data_cadastro DateTime? @default(now())
+
+  // Uma obra pertence a um canteiro
+  tb_obra tb_obra[]
+}
+
 model tb_obra {
   id                Int       @id @default(autoincrement())
+  // Chave estrangeira para o canteiro (empresa/escritório mãe)
+  id_canteiro       Int?
   nome              String    @db.VarChar(200)
   endereco          String?
   data_inicio       DateTime? @db.Date
@@ -68,6 +84,7 @@ model tb_obra {
   tipo_orgao        String?   @db.VarChar(20)
   data_cadastro     DateTime? @default(now())
 
+  tb_canteiro          tb_canteiro?          @relation(fields: [id_canteiro], references: [id])
   tb_movimentacao_obra tb_movimentacao_obra[]
 }
 

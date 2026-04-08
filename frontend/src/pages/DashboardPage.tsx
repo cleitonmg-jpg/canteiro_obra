@@ -11,11 +11,13 @@ import {
   BarChart3,
   LayoutDashboard,
   FileText,
+  FileUp,
   ChevronRight,
   Calculator,
   HardHat,
   Menu,
-  X
+  X,
+  FolderOpen
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../config';
@@ -23,6 +25,7 @@ import { useEmpresaNome } from '../hooks/useEmpresaNome';
 
 import { DashboardOverview } from '../views/DashboardOverview';
 import { EmpresaView } from '../views/EmpresaView';
+import { CanteiroView } from '../views/CanteiroView';
 import { ObrasView } from '../views/ObrasView';
 import { GruposView } from '../views/GruposView';
 import { ProdutosView } from '../views/ProdutosView';
@@ -30,6 +33,8 @@ import { MovimentosView } from '../views/MovimentosView';
 import { RelatoriosView } from '../views/RelatoriosView';
 import { UsuariosView } from '../views/UsuariosView';
 import { AuditoriaView } from '../views/AuditoriaView';
+import { ImportacaoNfView } from '../views/ImportacaoNfView';
+
 
 const NavItem = ({ icon: Icon, label, active = false, onClick }: any) => (
     <button 
@@ -56,6 +61,7 @@ const DashboardPage: React.FC = () => {
     const [searchLoading, setSearchLoading] = useState(false);
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searchData, setSearchData] = useState<{ obras: any[]; produtos: any[]; grupos: any[] } | null>(null);
+    const [cadastroProdutoDescricao, setCadastroProdutoDescricao] = useState('');
 
     const [buscaObrasExterna, setBuscaObrasExterna] = useState('');
     const [buscaProdutosExterna, setBuscaProdutosExterna] = useState('');
@@ -109,6 +115,17 @@ const DashboardPage: React.FC = () => {
         if (r?.type === 'obra') { setActiveTab('obras'); setBuscaObrasExterna(termo); }
         if (r?.type === 'produto') { setActiveTab('produtos'); setBuscaProdutosExterna(termo); }
         if (r?.type === 'grupo') { setActiveTab('grupos'); setBuscaGruposExterna(termo); }
+    };
+
+    const abrirCadastroProdutoPeloCatalogo = (descricao: string) => {
+        const termo = String(descricao || '').trim();
+        if (!termo) return;
+        setSearchOpen(false);
+        setSearchResults([]);
+        setGlobalSearch('');
+        setActiveTab('produtos');
+        setBuscaProdutosExterna('');
+        setCadastroProdutoDescricao(termo);
     };
 
     useEffect(() => {
@@ -194,12 +211,15 @@ const DashboardPage: React.FC = () => {
 
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-8 mb-4">Cadastros</p>
                     <NavItem icon={Building2} label="Cadastro da Empresa" active={activeTab === 'empresa'} onClick={() => handleTabChange('empresa')} />
+                    <NavItem icon={FolderOpen} label="Canteiros de Obras" active={activeTab === 'canteiros'} onClick={() => handleTabChange('canteiros')} />
                     <NavItem icon={HardHat} label="Cadastro de Obras" active={activeTab === 'obras'} onClick={() => handleTabChange('obras')} />
                     <NavItem icon={Package} label="Cadastro de Grupos" active={activeTab === 'grupos'} onClick={() => handleTabChange('grupos')} />
                     <NavItem icon={Settings} label="Produtos e Serviços" active={activeTab === 'produtos'} onClick={() => handleTabChange('produtos')} />
 
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-8 mb-4">Movimentação</p>
                     <NavItem icon={Calculator} label="Lançamento nas Obras" active={activeTab === 'movimentos'} onClick={() => handleTabChange('movimentos')} />
+
+                    <NavItem icon={FileUp} label="Importação NF-e" active={activeTab === 'importacao-nf'} onClick={() => handleTabChange('importacao-nf')} />
 
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-8 mb-4">Consultas</p>
                     <NavItem icon={BarChart3} label="Relatórios" active={false} onClick={() => { setSidebarOpen(false); window.open('/relatorios', '_blank'); }} />
@@ -267,7 +287,17 @@ const DashboardPage: React.FC = () => {
                                 {searchLoading ? (
                                     <div className="p-4 text-sm font-bold text-slate-500">Carregando...</div>
                                 ) : searchResults.length === 0 ? (
-                                    <div className="p-4 text-sm font-bold text-slate-500">Sem resultados.</div>
+                                    <div className="p-4 space-y-3">
+                                        <div className="text-sm font-bold text-slate-500">Sem resultados.</div>
+                                        <button
+                                            type="button"
+                                            onMouseDown={() => abrirCadastroProdutoPeloCatalogo(globalSearch)}
+                                            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-2xl font-black text-xs shadow-lg shadow-blue-100"
+                                        >
+                                            <Plus size={16} />
+                                            Cadastrar item no catÃ¡logo
+                                        </button>
+                                    </div>
                                 ) : (
                                     <div className="max-h-80 overflow-auto">
                                         {searchResults.map((r: any) => (
@@ -313,10 +343,18 @@ const DashboardPage: React.FC = () => {
                 <div className="p-4 md:p-10 pb-16 md:pb-20">
                     {activeTab === 'dashboard' && <DashboardOverview userName={userName} />}
                     {activeTab === 'empresa' && <EmpresaView onSaved={() => setActiveTab('dashboard')} />}
+                    {activeTab === 'canteiros' && <CanteiroView buscaExterna={buscaObrasExterna} />}
                     {activeTab === 'obras' && <ObrasView buscaExterna={buscaObrasExterna} />}
                     {activeTab === 'grupos' && <GruposView buscaExterna={buscaGruposExterna} />}
-                    {activeTab === 'produtos' && <ProdutosView buscaExterna={buscaProdutosExterna} />}
+                    {activeTab === 'produtos' && (
+                        <ProdutosView
+                            buscaExterna={buscaProdutosExterna}
+                            cadastroDescricaoExterna={cadastroProdutoDescricao}
+                            onCadastroDescricaoConsumida={() => setCadastroProdutoDescricao('')}
+                        />
+                    )}
                     {activeTab === 'movimentos' && <MovimentosView />}
+                    {activeTab === 'importacao-nf' && <ImportacaoNfView />}
                     {activeTab === 'relatorios' && <RelatoriosView />}
                     {activeTab === 'usuarios' && <UsuariosView />}
                     {activeTab === 'auditoria' && <AuditoriaView />}

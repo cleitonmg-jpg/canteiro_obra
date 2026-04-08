@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Building2, MapPin, Search, Edit2, Trash2, Calendar, HardHat, X, TrendingDown, TrendingUp, List, ChevronLeft, Save } from 'lucide-react';
+import { Plus, Building2, MapPin, Search, Edit2, Trash2, Calendar, HardHat, X, TrendingDown, TrendingUp, List, ChevronLeft, Save, FolderOpen } from 'lucide-react';
 
 import { API } from '../config';
 import { formatBRL } from '../utils/format';
+import { DEFAULT_OBRA_FILTRO_STATUS, matchesObraFiltroStatus, OBRA_FILTRO_STATUS_OPTIONS, obraFiltroLabel, type ObraFiltroStatus } from '../utils/obraStatus';
 
 interface Obra {
     id: number;
@@ -14,7 +15,12 @@ interface Obra {
     status: string;
     valor_contratado: number;
     gastos: number;
+    id_canteiro?: number | null;
+    tb_canteiro?: { id: number; nome: string } | null;
 }
+
+// Interface simples para código/select de canteiros
+interface CanteiroSimples { id: number; nome: string; }
 
 interface Lancamento {
     id: number;
@@ -79,6 +85,8 @@ export const ObrasView = ({ buscaExterna }: any) => {
     const [busca, setBusca] = useState('');
     const [carregando, setCarregando] = useState(false);
     const [erro, setErro] = useState('');
+    const [filtroCanteiroId, setFiltroCanteiroId] = useState('');
+    const [filtroStatusObra, setFiltroStatusObra] = useState<ObraFiltroStatus>(DEFAULT_OBRA_FILTRO_STATUS);
 
     // Painel de lançamentos
     const [obraDetalhe, setObraDetalhe] = useState<Obra | null>(null);
@@ -97,6 +105,9 @@ export const ObrasView = ({ buscaExterna }: any) => {
     const [responsavel, setResponsavel] = useState('');
     const [status, setStatus] = useState('EXECUÇÃO');
     const [valorContratado, setValorContratado] = useState('');
+    // Campo de canteiro vinculado
+    const [canteiros, setCanteiros] = useState<CanteiroSimples[]>([]);
+    const [canteiroId, setCanteiroId] = useState('');
 
     const carregar = async () => {
         try {
@@ -107,6 +118,12 @@ export const ObrasView = ({ buscaExterna }: any) => {
             setErro('Não foi possível conectar ao servidor.');
             return;
         }
+
+        // Carrega lista de canteiros para o select/form
+        try {
+            const rc = await fetch(`${API}/api/canteiros/lista`);
+            if (rc.ok) setCanteiros(await rc.json());
+        } catch { /* noop */ }
 
         // Dados agregados (pizza) - falha aqui não impede a tela
         try {
@@ -168,7 +185,7 @@ export const ObrasView = ({ buscaExterna }: any) => {
 
     const resetForm = () => {
         setEditId(null); setNome(''); setEndereco(''); setInicio(''); setTermino('');
-        setResponsavel(''); setStatus('EXECUÇÃO'); setValorContratado('');
+        setResponsavel(''); setStatus('EXECUÇÃO'); setValorContratado(''); setCanteiroId('');
         setViewForm(false);
     };
 
@@ -176,7 +193,7 @@ export const ObrasView = ({ buscaExterna }: any) => {
         e.preventDefault();
         setCarregando(true); setErro('');
         try {
-            const body = { nome, endereco, responsavel, status, valor_contratado: valorContratado, data_inicio: inicio || null, data_termino: termino || null };
+            const body = { nome, endereco, responsavel, status, valor_contratado: valorContratado, data_inicio: inicio || null, data_termino: termino || null, id_canteiro: canteiroId ? parseInt(canteiroId) : null };
             const res = editId
                 ? await fetch(`${API}/api/obras/${editId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
                 : await fetch(`${API}/api/obras`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -192,6 +209,8 @@ export const ObrasView = ({ buscaExterna }: any) => {
         setTermino(o.data_termino ? o.data_termino.substring(0, 10) : '');
         setResponsavel(o.responsavel || ''); setStatus(o.status);
         setValorContratado(String(o.valor_contratado));
+        // Preenche canteiro se vinculado
+        setCanteiroId(o.id_canteiro ? String(o.id_canteiro) : '');
         setViewForm(true);
     };
 
@@ -207,7 +226,20 @@ export const ObrasView = ({ buscaExterna }: any) => {
         }
     };
 
-    const filtradas = obras.filter(o => o.nome.toLowerCase().includes(busca.toLowerCase()));
+    const filtradas = obras.filter((o) => {
+        const termo = busca.toLowerCase();
+        const matchBusca =
+            o.nome.toLowerCase().includes(termo) ||
+            (o.responsavel || '').toLowerCase().includes(termo) ||
+            (o.tb_canteiro?.nome || '').toLowerCase().includes(termo);
+
+        const obraCanteiroId = o.tb_canteiro?.id ?? o.id_canteiro ?? null;
+        const matchCanteiro = !filtroCanteiroId || String(obraCanteiroId || '') === filtroCanteiroId;
+
+        const matchStatus = matchesObraFiltroStatus(o.status, filtroStatusObra);
+
+        return matchBusca && matchCanteiro && matchStatus;
+    });
     const totalLancamentos = lancamentos.reduce((a, l) => a + parseFloat(String(l.total_calculado || 0)), 0);
 
     // ── Painel de lançamentos ──────────────────────────────────────────────────
@@ -339,10 +371,12 @@ export const ObrasView = ({ buscaExterna }: any) => {
                         <button type="button" onClick={resetForm} className="text-slate-400 hover:text-red-500 p-2 bg-slate-50 rounded-xl"><X size={20} /></button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Campo: Nome da obra */}
                         <div className="lg:col-span-2 space-y-2">
                             <label className="text-sm font-bold text-slate-700 ml-1">Nome / Título da Obra</label>
                             <input required type="text" placeholder="Nome do residencial, prédio..." value={nome} onChange={e => setNome(e.target.value)} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:outline-none focus:border-blue-500 font-medium" />
                         </div>
+                        {/* Campo: Status */}
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 ml-1">Status</label>
                             <select value={status} onChange={e => setStatus(e.target.value)} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:outline-none focus:border-blue-500 font-bold">
@@ -353,6 +387,24 @@ export const ObrasView = ({ buscaExterna }: any) => {
                                 <option value="FINALIZADA">Finalizada / Entregue</option>
                             </select>
                         </div>
+                        {/* Campo: Canteiro vinculado */}
+                        <div className="lg:col-span-3 space-y-2">
+                            <label className="text-sm font-bold text-slate-700 ml-1 flex items-center gap-2">
+                                <FolderOpen size={14} className="text-blue-500" />
+                                Canteiro de Obras (mãe desta obra)
+                            </label>
+                            <select value={canteiroId} onChange={e => setCanteiroId(e.target.value)}
+                                className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:outline-none focus:border-blue-500 font-bold">
+                                <option value="">— Sem vínculo (obra avulsa) —</option>
+                                {canteiros.map(c => (
+                                    <option key={c.id} value={c.id}>{c.nome}</option>
+                                ))}
+                            </select>
+                            {canteiros.length === 0 && (
+                                <p className="text-xs text-amber-600 font-bold ml-1">Nenhum canteiro cadastrado. Cadastre primeiro em "Canteiros de Obras".</p>
+                            )}
+                        </div>
+                        {/* Campo: Endereço */}
                         <div className="lg:col-span-3 space-y-2">
                             <label className="text-sm font-bold text-slate-700 ml-1">Endereço Completo</label>
                             <input type="text" placeholder="Localização do canteiro..." value={endereco} onChange={e => setEndereco(e.target.value)} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:outline-none focus:border-blue-500 font-medium" />
@@ -384,9 +436,39 @@ export const ObrasView = ({ buscaExterna }: any) => {
                 </form>
             ) : (
                 <>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 max-w-sm flex items-center gap-3 focus-within:ring-4 ring-blue-50 transition-all">
-                        <Search size={18} className="text-slate-400" />
-                        <input type="text" placeholder="Procurar obra..." value={busca} onChange={e => setBusca(e.target.value)} className="bg-transparent border-none outline-none w-full font-bold text-sm text-slate-700" />
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 max-w-sm flex items-center gap-3 focus-within:ring-4 ring-blue-50 transition-all">
+                            <Search size={18} className="text-slate-400" />
+                            <input type="text" placeholder="Procurar obra..." value={busca} onChange={e => setBusca(e.target.value)} className="bg-transparent border-none outline-none w-full font-bold text-sm text-slate-700" />
+                        </div>
+
+                        <div className="bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-200/60 max-w-sm flex items-center gap-3">
+                            <List size={16} className="text-blue-500 shrink-0" />
+                            <select
+                                value={filtroStatusObra}
+                                onChange={(e) => setFiltroStatusObra(e.target.value as ObraFiltroStatus)}
+                                className="bg-transparent border-none outline-none w-full font-bold text-sm text-slate-700"
+                                title={`Filtro de obras: ${obraFiltroLabel(filtroStatusObra)}`}
+                            >
+                                {OBRA_FILTRO_STATUS_OPTIONS.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-200/60 max-w-sm flex items-center gap-3">
+                            <FolderOpen size={16} className="text-blue-500 shrink-0" />
+                            <select
+                                value={filtroCanteiroId}
+                                onChange={(e) => setFiltroCanteiroId(e.target.value)}
+                                className="bg-transparent border-none outline-none w-full font-bold text-sm text-slate-700"
+                            >
+                                <option value="">Todos os canteiros</option>
+                                {canteiros.map((c) => (
+                                    <option key={c.id} value={c.id}>{c.nome}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     {filtradas.length === 0 ? (
@@ -432,6 +514,13 @@ export const ObrasView = ({ buscaExterna }: any) => {
                                                 <HardHat size={14} className="text-slate-400 shrink-0" />
                                                 <span className="truncate">{o.responsavel || 'Sem Resp. Técnico'}</span>
                                             </div>
+                                            {/* Exibe canteiro vinculado */}
+                                            {o.tb_canteiro && (
+                                                <div className="flex items-center gap-2 text-blue-600 text-[11px] font-bold">
+                                                    <FolderOpen size={14} className="text-blue-400 shrink-0" />
+                                                    <span className="truncate">{o.tb_canteiro.nome}</span>
+                                                </div>
+                                            )}
                                             <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold">
                                                 <Calendar size={14} className="text-slate-400 shrink-0" />
                                                 {formatData(o.data_inicio)} até {formatData(o.data_termino)}
