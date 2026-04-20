@@ -156,17 +156,17 @@ export const GruposView = ({ buscaExterna }: any) => {
                 <table className="w-full text-left">
                     <thead className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
                         <tr>
-                            <th className="px-8 py-5">Código</th>
-                            <th className="px-8 py-5">Descrição do Grupo</th>
-                            <th className="px-8 py-5 text-right">Ações</th>
+                            <th className="px-4 py-4 md:px-6">Código</th>
+                            <th className="px-4 py-4 md:px-6">Descrição do Grupo</th>
+                            <th className="px-4 py-4 md:px-6 text-right">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-medium text-slate-600">
                         {filtrados.length > 0 ? filtrados.map(g => (
                             <tr key={g.id} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-8 py-5 text-blue-600 font-black">{g.codigo || '—'}</td>
-                                <td className="px-8 py-5 text-slate-800 font-bold">{g.descricao}</td>
-                                <td className="px-8 py-5 text-right">
+                                <td className="px-4 py-4 md:px-6 text-blue-600 font-black">{g.codigo || '—'}</td>
+                                <td className="px-4 py-4 md:px-6 text-slate-800 font-bold">{g.descricao}</td>
+                                <td className="px-4 py-4 md:px-6 text-right">
                                     <div className="flex justify-end gap-2">
                                         <button onClick={() => handleEditar(g)} className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors">
                                             <Edit2 size={18} />

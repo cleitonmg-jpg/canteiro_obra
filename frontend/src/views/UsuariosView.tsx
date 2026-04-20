@@ -163,15 +163,16 @@ export const UsuariosView = () => {
             )}
 
             <div className="bg-white border border-slate-200 rounded-[32px] overflow-hidden shadow-sm">
-                <table className="w-full text-left">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left min-w-[520px]">
                     <thead className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
                         <tr>
-                            <th className="px-8 py-5">Nome</th>
-                            <th className="px-8 py-5">Usuário</th>
-                            <th className="px-8 py-5">E-mail</th>
-                            <th className="px-8 py-5">Nível</th>
-                            <th className="px-8 py-5">Status</th>
-                            <th className="px-8 py-5 text-right">Ações</th>
+                            <th className="px-4 py-4 md:px-6">Nome</th>
+                            <th className="px-4 py-4 md:px-6">Usuário</th>
+                            <th className="px-4 py-4 md:px-6 hidden md:table-cell">E-mail</th>
+                            <th className="px-4 py-4 md:px-6">Nível</th>
+                            <th className="px-4 py-4 md:px-6 hidden sm:table-cell">Status</th>
+                            <th className="px-4 py-4 md:px-6 text-right">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -179,7 +180,7 @@ export const UsuariosView = () => {
                             <tr><td colSpan={6} className="px-8 py-12 text-center text-slate-400 font-bold">Nenhum usuário cadastrado.</td></tr>
                         ) : usuarios.map(u => (
                             <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-8 py-5">
+                                <td className="px-4 py-4 md:px-6">
                                     <div className="flex items-center gap-3">
                                         <div className="h-9 w-9 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center font-black text-sm">
                                             {u.nome.charAt(0).toUpperCase()}
@@ -187,22 +188,22 @@ export const UsuariosView = () => {
                                         <span className="font-bold text-slate-800">{u.nome}</span>
                                     </div>
                                 </td>
-                                <td className="px-8 py-5">
+                                <td className="px-4 py-4 md:px-6">
                                     <span className="font-black text-slate-600 text-sm bg-slate-100 px-2 py-1 rounded-lg">{u.login}</span>
                                 </td>
-                                <td className="px-8 py-5 text-slate-500 font-medium">{u.email || <span className="text-slate-300">—</span>}</td>
-                                <td className="px-8 py-5">
+                                <td className="px-4 py-4 md:px-6 text-slate-500 font-medium hidden md:table-cell">{u.email || <span className="text-slate-300">—</span>}</td>
+                                <td className="px-4 py-4 md:px-6 hidden sm:table-cell">
                                     <span className={`px-3 py-1 rounded-full text-xs font-black ${(nivelLabel[u.nivel_permissao] || nivelLabel.OPERADOR).cls}`}>
                                         {(nivelLabel[u.nivel_permissao] || nivelLabel.OPERADOR).label}
                                     </span>
                                 </td>
-                                <td className="px-8 py-5">
+                                <td className="px-4 py-4 md:px-6 hidden sm:table-cell">
                                     {u.ativo
                                         ? <span className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs"><CheckCircle size={14} /> Ativo</span>
                                         : <span className="flex items-center gap-1.5 text-slate-400 font-bold text-xs"><X size={14} /> Inativo</span>
                                     }
                                 </td>
-                                <td className="px-8 py-5 text-right">
+                                <td className="px-4 py-4 md:px-6 text-right">
                                     <div className="flex justify-end gap-2">
                                         <button onClick={() => handleEditar(u)} className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"><Edit2 size={18} /></button>
                                         {u.ativo && <button onClick={() => handleInativar(u.id, u.nome)} className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 size={18} /></button>}
@@ -212,6 +213,7 @@ export const UsuariosView = () => {
                         ))}
                     </tbody>
                 </table>
+              </div>
             </div>
 
             <div className="flex items-center gap-3 text-slate-400 px-2">

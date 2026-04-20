@@ -144,13 +144,14 @@ export const DashboardOverview = ({ userName }: any) => {
           ) : obrasTable.length === 0 ? (
             <div className="py-12 text-center text-slate-400 font-bold">Nenhuma obra ativa.</div>
           ) : (
-            <table className="w-full text-left">
+            <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[460px]">
               <thead className="bg-slate-50/80 text-slate-400 uppercase text-[10px] font-black tracking-[2px]">
                 <tr>
-                  <th className="px-6 md:px-8 py-4">Obra</th>
-                  <th className="px-6 md:px-8 py-4">Orçamento</th>
-                  <th className="px-6 md:px-8 py-4">Valor Recebido</th>
-                  <th className="px-6 md:px-8 py-4 text-right">%</th>
+                  <th className="px-4 md:px-6 py-4">Obra</th>
+                  <th className="px-4 md:px-6 py-4 hidden sm:table-cell">Orçamento</th>
+                  <th className="px-4 md:px-6 py-4">Recebido</th>
+                  <th className="px-4 md:px-6 py-4 text-right">%</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -160,19 +161,19 @@ export const DashboardOverview = ({ userName }: any) => {
                   const pct = orc > 0 ? Math.min(100, Math.max(0, (rec / orc) * 100)) : 0;
                   return (
                     <tr key={o.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 md:px-8 py-5">
+                      <td className="px-4 md:px-6 py-4">
                         <div className="flex flex-col">
                           <span className="text-[10px] font-black text-blue-500 mb-1 leading-none">OB-{String(o.id).padStart(3, '0')}</span>
-                          <span className="font-extrabold text-slate-800">{o.nome}</span>
+                          <span className="font-extrabold text-slate-800 text-sm">{o.nome}</span>
                           <span className="text-[11px] font-bold text-slate-400">{o.status || 'ATIVA'}</span>
                         </div>
                       </td>
-                      <td className="px-6 md:px-8 py-5 font-bold text-slate-600 text-sm whitespace-nowrap">{formatBRL(orc)}</td>
-                      <td className="px-6 md:px-8 py-5 font-black text-emerald-700 text-sm whitespace-nowrap">{formatBRL(rec)}</td>
-                      <td className="px-6 md:px-8 py-5 text-right">
+                      <td className="px-4 md:px-6 py-4 font-bold text-slate-600 text-sm whitespace-nowrap hidden sm:table-cell">{formatBRL(orc)}</td>
+                      <td className="px-4 md:px-6 py-4 font-black text-emerald-700 text-sm whitespace-nowrap">{formatBRL(rec)}</td>
+                      <td className="px-4 md:px-6 py-4 text-right">
                         <div className="flex flex-col items-end gap-1">
                           <span className="text-sm font-black text-slate-700">{pct.toFixed(1)}%</span>
-                          <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                             <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${pct}%` }}></div>
                           </div>
                         </div>
@@ -182,6 +183,7 @@ export const DashboardOverview = ({ userName }: any) => {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 

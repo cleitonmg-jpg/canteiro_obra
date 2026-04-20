@@ -248,41 +248,41 @@ export const ProdutosView = ({ buscaExterna, cadastroDescricaoExterna, onCadastr
                         </div>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left">
+                        <table className="w-full text-left min-w-[600px]">
                             <thead className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
                                 <tr>
-                                    <th className="px-8 py-5">Código</th>
-                                    <th className="px-8 py-5">Tipo</th>
-                                    <th className="px-8 py-5">Descrição</th>
-                                    <th className="px-8 py-5">Grupo</th>
-                                    <th className="px-8 py-5">Unidade</th>
-                                    <th className="px-8 py-5">Preço</th>
-                                    <th className="px-8 py-5 text-right">Ações</th>
+                                    <th className="px-4 py-4 md:px-6">Código</th>
+                                    <th className="px-4 py-4 md:px-6">Tipo</th>
+                                    <th className="px-4 py-4 md:px-6">Descrição</th>
+                                    <th className="px-4 py-4 md:px-6 hidden md:table-cell">Grupo</th>
+                                    <th className="px-4 py-4 md:px-6 hidden lg:table-cell">Unidade</th>
+                                    <th className="px-4 py-4 md:px-6">Preço</th>
+                                    <th className="px-4 py-4 md:px-6 text-right">Ações</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-medium text-slate-600">
                                 {filtrados.length > 0 ? filtrados.map(p => (
                                     <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-8 py-5 text-blue-600 font-black">{p.codigo_interno}</td>
-                                        <td className="px-8 py-5">{badgeTipo(p.tipo)}</td>
-                                        <td className="px-8 py-5 text-slate-800 font-bold">{p.descricao}</td>
-                                        <td className="px-8 py-5">
+                                        <td className="px-4 py-4 md:px-6 text-blue-600 font-black whitespace-nowrap">{p.codigo_interno}</td>
+                                        <td className="px-4 py-4 md:px-6">{badgeTipo(p.tipo)}</td>
+                                        <td className="px-4 py-4 md:px-6 text-slate-800 font-bold">{p.descricao}</td>
+                                        <td className="px-4 py-4 md:px-6 hidden md:table-cell">
                                             {p.tb_grupo
                                                 ? <span className="bg-slate-100 px-3 py-1 rounded-full text-xs font-bold text-slate-500">{p.tb_grupo.descricao}</span>
                                                 : <span className="text-slate-300">—</span>
                                             }
                                         </td>
-                                        <td className="px-8 py-5">{p.unidade_medida}</td>
-                                        <td className="px-8 py-5 font-black text-slate-800">{formatBRL(p.preco_custo)}</td>
-                                        <td className="px-8 py-5 text-right">
+                                        <td className="px-4 py-4 md:px-6 hidden lg:table-cell">{p.unidade_medida}</td>
+                                        <td className="px-4 py-4 md:px-6 font-black text-slate-800 whitespace-nowrap">{formatBRL(p.preco_custo)}</td>
+                                        <td className="px-4 py-4 md:px-6 text-right">
                                             <div className="flex justify-end gap-2">
-                                                <button onClick={() => handleEditar(p)} className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"><Edit2 size={18} /></button>
-                                                <button onClick={() => handleExcluir(p.id)} className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 size={18} /></button>
+                                                <button onClick={() => handleEditar(p)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"><Edit2 size={16} /></button>
+                                                <button onClick={() => handleExcluir(p.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><Trash2 size={16} /></button>
                                             </div>
                                         </td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan={7} className="px-8 py-12 text-center text-slate-400 font-bold">Nenhum registro encontrado.</td></tr>
+                                    <tr><td colSpan={7} className="px-4 py-12 text-center text-slate-400 font-bold">Nenhum registro encontrado.</td></tr>
                                 )}
                             </tbody>
                         </table>

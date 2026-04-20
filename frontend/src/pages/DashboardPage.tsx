@@ -247,7 +247,7 @@ const DashboardPage: React.FC = () => {
             </aside>
 
             {/* Conteúdo Principal */}
-            <main className="flex-1 flex flex-col w-full md:ml-72">
+            <main className="flex-1 flex flex-col min-w-0 md:ml-72 overflow-x-hidden">
                 {/* Header Superior Fixado */}
                 <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 md:px-10 py-4 md:py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 sticky top-0 z-10">
                     <div className="flex items-center gap-3 md:gap-4 w-full md:w-auto">
