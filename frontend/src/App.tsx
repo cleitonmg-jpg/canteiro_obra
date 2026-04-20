@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import RelatorioPage from './pages/RelatorioPage';
 import RelatorioObraPage from './pages/RelatorioObraPage';
+import RelatorioExecutorPage from './pages/RelatorioExecutorPage';
 import { useEmpresaNome } from './hooks/useEmpresaNome';
 
 const EmpresaNomeInline = ({ fallback = 'Empresa', className = '' }: any) => {
@@ -117,6 +118,7 @@ const App: React.FC = () => {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/relatorios" element={<RelatorioPage />} />
         <Route path="/relatorio-obra/:id" element={<RelatorioObraPage />} />
+        <Route path="/relatorio-executor/:id" element={<RelatorioExecutorPage />} />
       </Routes>
     </Router>
   );

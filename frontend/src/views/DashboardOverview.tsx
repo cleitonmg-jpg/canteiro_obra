@@ -148,15 +148,16 @@ export const DashboardOverview = ({ userName }: any) => {
               <thead className="bg-slate-50/80 text-slate-400 uppercase text-[10px] font-black tracking-[2px]">
                 <tr>
                   <th className="px-6 md:px-8 py-4">Obra</th>
-                  <th className="px-6 md:px-8 py-4">Responsável</th>
-                  <th className="px-6 md:px-8 py-4">Consumo do Orçamento</th>
+                  <th className="px-6 md:px-8 py-4">Orçamento</th>
+                  <th className="px-6 md:px-8 py-4">Valor Recebido</th>
+                  <th className="px-6 md:px-8 py-4 text-right">%</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {obrasTable.map(o => {
                   const orc = Number(o.valor_contratado || 0);
-                  const gas = Number(o.gastos || 0);
-                  const pct = orc > 0 ? Math.min(100, Math.max(0, (gas / orc) * 100)) : 0;
+                  const rec = Number(o.valorRecebido || 0);
+                  const pct = orc > 0 ? Math.min(100, Math.max(0, (rec / orc) * 100)) : 0;
                   return (
                     <tr key={o.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 md:px-8 py-5">
@@ -166,17 +167,13 @@ export const DashboardOverview = ({ userName }: any) => {
                           <span className="text-[11px] font-bold text-slate-400">{o.status || 'ATIVA'}</span>
                         </div>
                       </td>
-                      <td className="px-6 md:px-8 py-5 font-bold text-slate-500 text-sm">{o.responsavel || '--'}</td>
-                      <td className="px-6 md:px-8 py-5">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-black text-slate-400">{pct.toFixed(0)}%</span>
-                            <span className="text-[10px] font-black text-slate-400">
-                              {formatBRL(gas)} / {formatBRL(orc)}
-                            </span>
-                          </div>
-                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="bg-blue-600 h-full rounded-full transition-all" style={{ width: `${pct}%` }}></div>
+                      <td className="px-6 md:px-8 py-5 font-bold text-slate-600 text-sm whitespace-nowrap">{formatBRL(orc)}</td>
+                      <td className="px-6 md:px-8 py-5 font-black text-emerald-700 text-sm whitespace-nowrap">{formatBRL(rec)}</td>
+                      <td className="px-6 md:px-8 py-5 text-right">
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-sm font-black text-slate-700">{pct.toFixed(1)}%</span>
+                          <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${pct}%` }}></div>
                           </div>
                         </div>
                       </td>

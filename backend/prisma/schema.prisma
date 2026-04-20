@@ -30,6 +30,7 @@ model tb_usuario {
   data_cadastro   DateTime? @default(now())
 
   tb_movimentacao_obra tb_movimentacao_obra[]
+  tb_etapa_obra        tb_etapa_obra[]
 }
 
 model tb_grupo {
@@ -86,6 +87,7 @@ model tb_obra {
 
   tb_canteiro          tb_canteiro?          @relation(fields: [id_canteiro], references: [id])
   tb_movimentacao_obra tb_movimentacao_obra[]
+  tb_etapa_obra        tb_etapa_obra[]
 }
 
 model tb_movimentacao_obra {
@@ -101,6 +103,36 @@ model tb_movimentacao_obra {
   tb_obra            tb_obra?            @relation(fields: [id_obra], references: [id])
   tb_produto_servico tb_produto_servico? @relation(fields: [id_produto_servico], references: [id])
   tb_usuario         tb_usuario?         @relation(fields: [id_usuario_registro], references: [id])
+}
+
+model tb_etapa_catalogo {
+  id                Int             @id @default(autoincrement())
+  codigo            String          @unique @db.VarChar(20)
+  servico_executado String          @db.VarChar(200)
+  descricao         String?
+  valor_padrao      Decimal?        @default(0) @db.Decimal(12, 2)
+  ativo             Boolean?        @default(true)
+  created_at        DateTime?       @default(now())
+
+  tb_etapa_obra     tb_etapa_obra[]
+}
+
+model tb_etapa_obra {
+  id                  Int                @id @default(autoincrement())
+  id_obra             Int
+  id_etapa_catalogo   Int?
+  servico_executado   String             @db.VarChar(200)
+  descricao           String?
+  valor_a_receber     Decimal            @default(0) @db.Decimal(12, 2)
+  status_etapa        String?            @default("pendente") @db.VarChar(30)
+  data_lancamento     DateTime?          @default(now())
+  data_baixa          DateTime?
+  id_usuario_registro Int?
+  created_at          DateTime?          @default(now())
+
+  tb_obra             tb_obra            @relation(fields: [id_obra], references: [id])
+  tb_etapa_catalogo   tb_etapa_catalogo? @relation(fields: [id_etapa_catalogo], references: [id])
+  tb_usuario          tb_usuario?        @relation(fields: [id_usuario_registro], references: [id])
 }
 
 model tb_auditoria {

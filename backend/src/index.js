@@ -125,6 +125,44 @@ const garantirCompatibilidadeBanco = async () => {
   await prisma.$executeRawUnsafe(`
     CREATE INDEX IF NOT EXISTS idx_tb_obra_id_canteiro ON tb_obra(id_canteiro);
   `);
+
+  // ── MIGRACAO ETAPAS ── catálogo de etapas e lançamentos por obra
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS tb_etapa_catalogo (
+      id                SERIAL PRIMARY KEY,
+      codigo            VARCHAR(20) NOT NULL UNIQUE,
+      servico_executado VARCHAR(200) NOT NULL,
+      descricao         TEXT,
+      valor_padrao      DECIMAL(12,2) DEFAULT 0,
+      ativo             BOOLEAN DEFAULT true,
+      created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS tb_etapa_obra (
+      id                  SERIAL PRIMARY KEY,
+      id_obra             INTEGER NOT NULL REFERENCES tb_obra(id) ON DELETE CASCADE,
+      id_etapa_catalogo   INTEGER REFERENCES tb_etapa_catalogo(id) ON DELETE SET NULL,
+      servico_executado   VARCHAR(200) NOT NULL,
+      descricao           TEXT,
+      valor_a_receber     DECIMAL(12,2) NOT NULL DEFAULT 0,
+      status_etapa        VARCHAR(30) DEFAULT 'pendente',
+      data_lancamento     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      data_baixa          TIMESTAMP NULL,
+      id_usuario_registro INTEGER REFERENCES tb_usuario(id) ON DELETE SET NULL,
+      created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS idx_tb_etapa_obra_id_obra ON tb_etapa_obra(id_obra);
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE IF EXISTS tb_etapa_obra
+    ADD COLUMN IF NOT EXISTS data_baixa TIMESTAMP NULL;
+  `);
 };
 
 
@@ -618,13 +656,15 @@ app.get('/api/obras', async (_req, res) => {
       orderBy: { data_cadastro: 'desc' },
       include: {
         tb_movimentacao_obra: { select: { total_calculado: true } },
-        tb_canteiro: { select: { id: true, nome: true } }, // inclui canteiro no retorno
+        tb_canteiro: { select: { id: true, nome: true } },
+        tb_etapa_obra: { select: { valor_a_receber: true } },
       },
     });
     const result = obras.map(o => {
       const gastos = o.tb_movimentacao_obra.reduce((acc, m) => acc + parseFloat(m.total_calculado || 0), 0);
-      const { tb_movimentacao_obra, ...obra } = o;
-      return { ...obra, gastos };
+      const valorRecebido = o.tb_etapa_obra.reduce((acc, e) => acc + parseFloat(e.valor_a_receber || 0), 0);
+      const { tb_movimentacao_obra, tb_etapa_obra, ...obra } = o;
+      return { ...obra, gastos, valorRecebido };
     });
     res.json(result);
   } catch (err) { res.status(500).json({ erro: err.message }); }
@@ -870,6 +910,127 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   try {
     await prisma.tb_usuario.update({ where: { id: parseInt(req.params.id) }, data: { ativo: false } });
     res.json({ mensagem: 'Usuário inativado' });
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ETAPAS — Catálogo e Lançamentos por Obra
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const gerarCodigoEtapa = async () => {
+  const items = await prisma.tb_etapa_catalogo.findMany({ select: { codigo: true } });
+  const nums = items.map(e => e.codigo).filter(c => c?.startsWith('ET-'))
+    .map(c => parseInt(c.replace('ET-', ''), 10)).filter(n => !isNaN(n));
+  return `ET-${String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4, '0')}`;
+};
+
+app.get('/api/etapas-catalogo', async (_req, res) => {
+  try {
+    res.json(await prisma.tb_etapa_catalogo.findMany({
+      where: { ativo: true },
+      orderBy: { codigo: 'asc' },
+    }));
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.post('/api/etapas-catalogo', async (req, res) => {
+  try {
+    const { servico_executado, descricao, valor_padrao } = req.body;
+    if (!servico_executado?.trim()) return res.status(400).json({ erro: 'Serviço executado é obrigatório' });
+    const codigo = await gerarCodigoEtapa();
+    res.status(201).json(await prisma.tb_etapa_catalogo.create({
+      data: {
+        codigo,
+        servico_executado: servico_executado.trim(),
+        descricao: descricao?.trim() || null,
+        valor_padrao: parseFloat(valor_padrao) || 0,
+        ativo: true,
+      },
+    }));
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.put('/api/etapas-catalogo/:id', async (req, res) => {
+  try {
+    const { servico_executado, descricao, valor_padrao } = req.body;
+    if (!servico_executado?.trim()) return res.status(400).json({ erro: 'Serviço executado é obrigatório' });
+    res.json(await prisma.tb_etapa_catalogo.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        servico_executado: servico_executado.trim(),
+        descricao: descricao?.trim() || null,
+        valor_padrao: parseFloat(valor_padrao) || 0,
+      },
+    }));
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.delete('/api/etapas-catalogo/:id', async (req, res) => {
+  try {
+    await prisma.tb_etapa_catalogo.update({ where: { id: parseInt(req.params.id) }, data: { ativo: false } });
+    res.json({ mensagem: 'Etapa do catálogo inativada' });
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.get('/api/etapas-obra', async (req, res) => {
+  try {
+    const { id_obra } = req.query;
+    if (!id_obra) return res.status(400).json({ erro: 'id_obra é obrigatório' });
+    res.json(await prisma.tb_etapa_obra.findMany({
+      where: { id_obra: parseInt(id_obra) },
+      orderBy: { data_lancamento: 'desc' },
+      include: {
+        tb_etapa_catalogo: { select: { id: true, codigo: true, servico_executado: true } },
+      },
+    }));
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.post('/api/etapas-obra', async (req, res) => {
+  try {
+    const { id_obra, id_etapa_catalogo, servico_executado, descricao, valor_a_receber, status_etapa, data_lancamento, data_baixa } = req.body;
+    if (!id_obra || !servico_executado?.trim()) return res.status(400).json({ erro: 'Obra e serviço são obrigatórios' });
+    const idUsuario = req.body.id_usuario_registro ? parseInt(req.body.id_usuario_registro) : null;
+    res.status(201).json(await prisma.tb_etapa_obra.create({
+      data: {
+        id_obra: parseInt(id_obra),
+        id_etapa_catalogo: id_etapa_catalogo ? parseInt(id_etapa_catalogo) : null,
+        servico_executado: servico_executado.trim(),
+        descricao: descricao?.trim() || null,
+        valor_a_receber: parseFloat(valor_a_receber) || 0,
+        status_etapa: status_etapa || 'pendente',
+        data_lancamento: data_lancamento ? new Date(data_lancamento) : new Date(),
+        data_baixa: data_baixa ? new Date(data_baixa) : null,
+        id_usuario_registro: idUsuario,
+      },
+      include: {
+        tb_etapa_catalogo: { select: { id: true, codigo: true, servico_executado: true } },
+      },
+    }));
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.put('/api/etapas-obra/:id', async (req, res) => {
+  try {
+    const { servico_executado, descricao, valor_a_receber, status_etapa, data_lancamento, data_baixa } = req.body;
+    res.json(await prisma.tb_etapa_obra.update({
+      where: { id: parseInt(req.params.id) },
+      data: {
+        servico_executado: servico_executado?.trim(),
+        descricao: descricao?.trim() || null,
+        valor_a_receber: parseFloat(valor_a_receber) || 0,
+        status_etapa: status_etapa || 'pendente',
+        data_lancamento: data_lancamento ? new Date(data_lancamento) : undefined,
+        data_baixa: data_baixa ? new Date(data_baixa) : null,
+      },
+    }));
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.delete('/api/etapas-obra/:id', async (req, res) => {
+  try {
+    await prisma.tb_etapa_obra.delete({ where: { id: parseInt(req.params.id) } });
+    res.json({ mensagem: 'Etapa excluída' });
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 

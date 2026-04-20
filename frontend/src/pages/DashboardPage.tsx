@@ -17,7 +17,8 @@ import {
   HardHat,
   Menu,
   X,
-  FolderOpen
+  FolderOpen,
+  Layers
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../config';
@@ -35,6 +36,7 @@ import { RelatoriosView } from '../views/RelatoriosView';
 import { UsuariosView } from '../views/UsuariosView';
 import { AuditoriaView } from '../views/AuditoriaView';
 import { ImportacaoNfView } from '../views/ImportacaoNfView';
+import { EtapasView } from '../views/EtapasView';
 
 
 const NavItem = ({ icon: Icon, label, active = false, onClick }: any) => (
@@ -219,7 +221,7 @@ const DashboardPage: React.FC = () => {
 
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-8 mb-4">Movimentação</p>
                     <NavItem icon={Calculator} label="Lançamento nas Obras" active={activeTab === 'movimentos'} onClick={() => handleTabChange('movimentos')} />
-
+                    <NavItem icon={Layers} label="Etapas da Obra" active={activeTab === 'etapas'} onClick={() => handleTabChange('etapas')} />
                     <NavItem icon={FileUp} label="Importação NF-e" active={activeTab === 'importacao-nf'} onClick={() => handleTabChange('importacao-nf')} />
 
                     <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mt-8 mb-4">Consultas</p>
@@ -358,6 +360,7 @@ const DashboardPage: React.FC = () => {
                         />
                     )}
                     {activeTab === 'movimentos' && <MovimentosView />}
+                    {activeTab === 'etapas' && <EtapasView />}
                     {activeTab === 'importacao-nf' && <ImportacaoNfView />}
                     {activeTab === 'relatorios' && <RelatoriosView />}
                     {activeTab === 'usuarios' && <UsuariosView />}
