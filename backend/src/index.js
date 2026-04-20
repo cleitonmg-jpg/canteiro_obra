@@ -553,7 +553,10 @@ app.get('/api/canteiros', async (_req, res) => {
       orderBy: { nome: 'asc' },
       include: {
         tb_obra: {
-          include: { tb_movimentacao_obra: { select: { total_calculado: true } } },
+          include: {
+            tb_movimentacao_obra: { select: { total_calculado: true } },
+            tb_etapa_obra: { select: { valor_a_receber: true, status_etapa: true } },
+          },
         },
       },
     });
@@ -562,16 +565,28 @@ app.get('/api/canteiros', async (_req, res) => {
     const result = canteiros.map(c => {
       const obras = c.tb_obra.map(o => {
         const gastos = o.tb_movimentacao_obra.reduce((acc, m) => acc + parseFloat(String(m.total_calculado || 0)), 0);
-        const { tb_movimentacao_obra, ...obra } = o;
-        return { ...obra, gastos };
+        const etapasPorStatus = {};
+        for (const e of o.tb_etapa_obra || []) {
+          const s = e.status_etapa || 'pendente';
+          etapasPorStatus[s] = (etapasPorStatus[s] || 0) + parseFloat(e.valor_a_receber || 0);
+        }
+        const valorRecebido = Object.values(etapasPorStatus).reduce((a, v) => a + v, 0);
+        const { tb_movimentacao_obra, tb_etapa_obra, ...obra } = o;
+        return { ...obra, gastos, valorRecebido, etapasPorStatus };
       });
 
       const totalOrcamento = obras.reduce((acc, o) => acc + parseFloat(String(o.valor_contratado || 0)), 0);
       const totalGastos    = obras.reduce((acc, o) => acc + (o.gastos || 0), 0);
       const lucro          = totalOrcamento - totalGastos;
+      const totalEtapasPorStatus = {};
+      for (const o of obras) {
+        for (const [s, v] of Object.entries(o.etapasPorStatus)) {
+          totalEtapasPorStatus[s] = (totalEtapasPorStatus[s] || 0) + v;
+        }
+      }
 
       const { tb_obra, ...canteiro } = c;
-      return { ...canteiro, obras, totalOrcamento, totalGastos, lucro };
+      return { ...canteiro, obras, totalOrcamento, totalGastos, lucro, totalEtapasPorStatus };
     });
 
     res.json(result);
@@ -657,14 +672,19 @@ app.get('/api/obras', async (_req, res) => {
       include: {
         tb_movimentacao_obra: { select: { total_calculado: true } },
         tb_canteiro: { select: { id: true, nome: true } },
-        tb_etapa_obra: { select: { valor_a_receber: true } },
+        tb_etapa_obra: { select: { valor_a_receber: true, status_etapa: true } },
       },
     });
     const result = obras.map(o => {
       const gastos = o.tb_movimentacao_obra.reduce((acc, m) => acc + parseFloat(m.total_calculado || 0), 0);
-      const valorRecebido = o.tb_etapa_obra.reduce((acc, e) => acc + parseFloat(e.valor_a_receber || 0), 0);
+      const etapasPorStatus = {};
+      for (const e of o.tb_etapa_obra) {
+        const s = e.status_etapa || 'pendente';
+        etapasPorStatus[s] = (etapasPorStatus[s] || 0) + parseFloat(e.valor_a_receber || 0);
+      }
+      const valorRecebido = Object.values(etapasPorStatus).reduce((a, v) => a + v, 0);
       const { tb_movimentacao_obra, tb_etapa_obra, ...obra } = o;
-      return { ...obra, gastos, valorRecebido };
+      return { ...obra, gastos, valorRecebido, etapasPorStatus };
     });
     res.json(result);
   } catch (err) { res.status(500).json({ erro: err.message }); }

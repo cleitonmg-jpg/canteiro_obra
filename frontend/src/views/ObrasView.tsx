@@ -17,6 +17,8 @@ interface Obra {
     gastos: number;
     id_canteiro?: number | null;
     tb_canteiro?: { id: number; nome: string } | null;
+    etapasPorStatus?: Record<string, number>;
+    valorRecebido?: number;
 }
 
 // Interface simples para código/select de canteiros
@@ -67,6 +69,14 @@ const buildPie = (grupos: GrupoGasto[]) => {
 
     const title = parts.map(p => `${p.descricao}: ${fmt(Number(p.total) || 0)}`).join('\n');
     return { gradient: `conic-gradient(${stops.join(', ')})`, title, legend };
+};
+
+const EPS_ORDER = ['concluída', 'em andamento', 'pendente', 'cancelada'];
+const EPS_COLORS: Record<string, { bar: string; badge: string }> = {
+    'concluída':    { bar: '#10b981', badge: 'bg-emerald-100 text-emerald-700' },
+    'em andamento': { bar: '#3b82f6', badge: 'bg-blue-100 text-blue-700' },
+    'pendente':     { bar: '#f59e0b', badge: 'bg-amber-100 text-amber-700' },
+    'cancelada':    { bar: '#94a3b8', badge: 'bg-slate-100 text-slate-500' },
 };
 
 const statusColor: Record<string, string> = {
@@ -554,6 +564,39 @@ export const ObrasView = ({ buscaExterna }: any) => {
                                                 </div>
                                                 <p className={`font-black text-sm ${positivo ? 'text-emerald-600' : 'text-red-600'}`}>{fmt(lucro)}</p>
                                             </div>
+                                            {/* Etapas por status */}
+                                            {(() => {
+                                                const eps = o.etapasPorStatus || {};
+                                                const totalEtapas = Object.values(eps).reduce((a, v) => a + v, 0);
+                                                if (totalEtapas <= 0) return null;
+                                                return (
+                                                    <div className="pt-2 border-t border-slate-100">
+                                                        <div className="flex justify-between items-center mb-1.5">
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Etapas</p>
+                                                            <p className="text-[10px] font-black text-slate-600">{fmt(totalEtapas)}</p>
+                                                        </div>
+                                                        <div className="flex h-2 rounded-full overflow-hidden gap-px mb-1.5">
+                                                            {EPS_ORDER.map(s => {
+                                                                const v = eps[s] || 0;
+                                                                if (!v) return null;
+                                                                return <div key={s} style={{ width: `${(v / totalEtapas * 100)}%`, background: EPS_COLORS[s].bar }} />;
+                                                            })}
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {EPS_ORDER.map(s => {
+                                                                const v = eps[s] || 0;
+                                                                if (!v) return null;
+                                                                const pct = (v / totalEtapas * 100).toFixed(0);
+                                                                return (
+                                                                    <span key={s} className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${EPS_COLORS[s].badge}`}>
+                                                                        {pct}% {s}
+                                                                    </span>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
                                             {/* Botão ver lançamentos */}
                                             <button
                                                 onClick={() => abrirLancamentos(o)}

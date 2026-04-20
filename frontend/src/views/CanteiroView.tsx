@@ -17,6 +17,8 @@ interface Obra {
   valor_contratado: number;
   gastos: number;
   id_canteiro?: number | null;
+  etapasPorStatus?: Record<string, number>;
+  valorRecebido?: number;
 }
 
 interface Canteiro {
@@ -31,9 +33,18 @@ interface Canteiro {
   totalOrcamento: number;
   totalGastos: number;
   lucro: number;
+  totalEtapasPorStatus: Record<string, number>;
 }
 
 const fmt = (v: number) => formatBRL(v);
+
+const EPS_ORDER = ['concluída', 'em andamento', 'pendente', 'cancelada'];
+const EPS_COLORS: Record<string, { bar: string; badge: string }> = {
+  'concluída':    { bar: '#10b981', badge: 'bg-emerald-100 text-emerald-700' },
+  'em andamento': { bar: '#3b82f6', badge: 'bg-blue-100 text-blue-700' },
+  'pendente':     { bar: '#f59e0b', badge: 'bg-amber-100 text-amber-700' },
+  'cancelada':    { bar: '#94a3b8', badge: 'bg-slate-100 text-slate-500' },
+};
 
 const statusColor: Record<string, string> = {
   'LICITAÇÃO': 'bg-amber-100 text-amber-700',
@@ -137,12 +148,19 @@ export const CanteiroView = ({ buscaExterna }: any) => {
         const totalOrcamento = obrasFiltradas.reduce((acc, o) => acc + (Number(o.valor_contratado) || 0), 0);
         const totalGastos = obrasFiltradas.reduce((acc, o) => acc + (Number(o.gastos) || 0), 0);
         const lucro = totalOrcamento - totalGastos;
+        const totalEtapasPorStatus: Record<string, number> = {};
+        for (const o of obrasFiltradas) {
+          for (const [s, v] of Object.entries(o.etapasPorStatus || {})) {
+            totalEtapasPorStatus[s] = (totalEtapasPorStatus[s] || 0) + v;
+          }
+        }
         return {
           ...c,
           obras: obrasFiltradas,
           totalOrcamento,
           totalGastos,
           lucro,
+          totalEtapasPorStatus,
         };
       });
   }, [canteiros, busca, filtroStatusObra]);
@@ -309,6 +327,34 @@ export const CanteiroView = ({ buscaExterna }: any) => {
                     </p>
                     <p className={`text-sm font-black ${lucroPositivo ? 'text-emerald-600' : 'text-red-600'}`}>{fmt(c.lucro)}</p>
                   </div>
+                  {(() => {
+                    const totalEtapas = Object.values(c.totalEtapasPorStatus || {}).reduce((a, v) => a + v, 0);
+                    if (!totalEtapas) return null;
+                    return (
+                      <div className="text-right px-3 py-1.5 rounded-xl bg-slate-50">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Etapas</p>
+                        <p className="text-sm font-black text-slate-700">{fmt(totalEtapas)}</p>
+                        <div className="flex h-1.5 rounded-full overflow-hidden mt-1 gap-px">
+                          {EPS_ORDER.map(s => {
+                            const v = (c.totalEtapasPorStatus || {})[s] || 0;
+                            if (!v) return null;
+                            return <div key={s} style={{ width: `${(v / totalEtapas * 100)}%`, background: EPS_COLORS[s].bar }} />;
+                          })}
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-1 justify-end">
+                          {EPS_ORDER.map(s => {
+                            const v = (c.totalEtapasPorStatus || {})[s] || 0;
+                            if (!v) return null;
+                            return (
+                              <span key={s} className={`text-[8px] font-black px-1 py-0.5 rounded ${EPS_COLORS[s].badge}`}>
+                                {(v / totalEtapas * 100).toFixed(0)}% {s}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {/* Ações */}
                   <div className="flex items-center gap-2">
                     <button onClick={() => handleEditar(c)} title="Editar canteiro"
@@ -345,12 +391,15 @@ export const CanteiroView = ({ buscaExterna }: any) => {
                             <th className="px-6 py-3 text-right">Orçamento</th>
                             <th className="px-6 py-3 text-right">Gastos</th>
                             <th className="px-6 py-3 text-right">Lucro</th>
+                            <th className="px-6 py-3 text-right">Etapas</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-blue-100">
                           {c.obras.map(o => {
                             const lucro = (Number(o.valor_contratado) || 0) - (o.gastos || 0);
                             const pos = lucro >= 0;
+                            const eps = o.etapasPorStatus || {};
+                            const totalEtapas = Object.values(eps).reduce((a, v) => a + v, 0);
                             return (
                               <tr key={o.id} className="hover:bg-white/60 transition-colors">
                                 <td className="px-6 py-3.5">
@@ -366,6 +415,31 @@ export const CanteiroView = ({ buscaExterna }: any) => {
                                 <td className="px-6 py-3.5 text-right font-bold text-slate-700">{fmt(Number(o.valor_contratado) || 0)}</td>
                                 <td className="px-6 py-3.5 text-right font-bold text-red-600">{fmt(o.gastos || 0)}</td>
                                 <td className={`px-6 py-3.5 text-right font-black ${pos ? 'text-emerald-600' : 'text-red-600'}`}>{fmt(lucro)}</td>
+                                <td className="px-6 py-3.5 text-right">
+                                  {totalEtapas > 0 ? (
+                                    <div className="flex flex-col items-end gap-1">
+                                      <p className="text-xs font-black text-slate-700">{fmt(totalEtapas)}</p>
+                                      <div className="flex h-1.5 w-20 rounded-full overflow-hidden gap-px">
+                                        {EPS_ORDER.map(s => {
+                                          const v = eps[s] || 0;
+                                          if (!v) return null;
+                                          return <div key={s} style={{ width: `${(v / totalEtapas * 100)}%`, background: EPS_COLORS[s].bar }} />;
+                                        })}
+                                      </div>
+                                      <div className="flex flex-wrap gap-1 justify-end">
+                                        {EPS_ORDER.map(s => {
+                                          const v = eps[s] || 0;
+                                          if (!v) return null;
+                                          return (
+                                            <span key={s} className={`text-[8px] font-black px-1 py-0.5 rounded ${EPS_COLORS[s].badge}`}>
+                                              {(v / totalEtapas * 100).toFixed(0)}%
+                                            </span>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  ) : <span className="text-slate-300 text-xs">—</span>}
+                                </td>
                               </tr>
                             );
                           })}
@@ -379,6 +453,35 @@ export const CanteiroView = ({ buscaExterna }: any) => {
                             <td className="px-6 py-3 text-right font-black text-slate-800">{fmt(c.totalOrcamento)}</td>
                             <td className="px-6 py-3 text-right font-black text-red-700">{fmt(c.totalGastos)}</td>
                             <td className={`px-6 py-3 text-right font-black ${c.lucro >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{fmt(c.lucro)}</td>
+                            <td className="px-6 py-3 text-right">
+                              {(() => {
+                                const totalEtapas = Object.values(c.totalEtapasPorStatus || {}).reduce((a, v) => a + v, 0);
+                                if (!totalEtapas) return <span className="text-blue-300 text-xs font-black">—</span>;
+                                return (
+                                  <div className="flex flex-col items-end gap-1">
+                                    <p className="text-xs font-black text-blue-800">{fmt(totalEtapas)}</p>
+                                    <div className="flex h-1.5 w-20 rounded-full overflow-hidden gap-px">
+                                      {EPS_ORDER.map(s => {
+                                        const v = (c.totalEtapasPorStatus || {})[s] || 0;
+                                        if (!v) return null;
+                                        return <div key={s} style={{ width: `${(v / totalEtapas * 100)}%`, background: EPS_COLORS[s].bar }} />;
+                                      })}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1 justify-end">
+                                      {EPS_ORDER.map(s => {
+                                        const v = (c.totalEtapasPorStatus || {})[s] || 0;
+                                        if (!v) return null;
+                                        return (
+                                          <span key={s} className={`text-[8px] font-black px-1 py-0.5 rounded ${EPS_COLORS[s].badge}`}>
+                                            {(v / totalEtapas * 100).toFixed(0)}% {s}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </td>
                           </tr>
                         </tfoot>
                       </table>
