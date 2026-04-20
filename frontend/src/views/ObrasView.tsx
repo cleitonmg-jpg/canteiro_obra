@@ -548,6 +548,7 @@ export const ObrasView = ({ buscaExterna }: any) => {
                                             </div>
                                         )}
 
+                                        {/* Grupo financeiro */}
                                         <div className="pt-3 border-t border-slate-100 space-y-2">
                                             <div className="flex justify-between items-center">
                                                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Orçamento</p>
@@ -564,39 +565,6 @@ export const ObrasView = ({ buscaExterna }: any) => {
                                                 </div>
                                                 <p className={`font-black text-sm ${positivo ? 'text-emerald-600' : 'text-red-600'}`}>{fmt(lucro)}</p>
                                             </div>
-                                            {/* Etapas por status */}
-                                            {(() => {
-                                                const eps = o.etapasPorStatus || {};
-                                                const totalEtapas = Object.values(eps).reduce((a, v) => a + v, 0);
-                                                if (totalEtapas <= 0) return null;
-                                                return (
-                                                    <div className="pt-2 border-t border-slate-100">
-                                                        <div className="flex justify-between items-center mb-1.5">
-                                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Etapas</p>
-                                                            <p className="text-[10px] font-black text-slate-600">{fmt(totalEtapas)}</p>
-                                                        </div>
-                                                        <div className="flex h-2 rounded-full overflow-hidden gap-px mb-1.5">
-                                                            {EPS_ORDER.map(s => {
-                                                                const v = eps[s] || 0;
-                                                                if (!v) return null;
-                                                                return <div key={s} style={{ width: `${(v / totalEtapas * 100)}%`, background: EPS_COLORS[s].bar }} />;
-                                                            })}
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {EPS_ORDER.map(s => {
-                                                                const v = eps[s] || 0;
-                                                                if (!v) return null;
-                                                                const pct = (v / totalEtapas * 100).toFixed(0);
-                                                                return (
-                                                                    <span key={s} className={`text-[9px] font-black px-1.5 py-0.5 rounded-lg ${EPS_COLORS[s].badge}`}>
-                                                                        {pct}% {s}
-                                                                    </span>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })()}
                                             {/* Botão ver lançamentos */}
                                             <button
                                                 onClick={() => abrirLancamentos(o)}
@@ -605,6 +573,47 @@ export const ObrasView = ({ buscaExterna }: any) => {
                                                 <List size={14} /> VER LANÇAMENTOS
                                             </button>
                                         </div>
+
+                                        {/* Grupo separado — Etapas por status */}
+                                        {(() => {
+                                            const eps = o.etapasPorStatus || {};
+                                            const totalEtapas = Object.values(eps).reduce((a, v) => a + v, 0);
+                                            return (
+                                                <div className="mt-3 pt-3 border-t-2 border-dashed border-slate-200 space-y-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Etapas a Receber</p>
+                                                        <p className="text-[10px] font-black text-slate-700">{totalEtapas > 0 ? fmt(totalEtapas) : '—'}</p>
+                                                    </div>
+                                                    {totalEtapas > 0 ? (
+                                                        <>
+                                                            <div className="flex h-2.5 rounded-full overflow-hidden gap-px">
+                                                                {EPS_ORDER.map(s => {
+                                                                    const v = eps[s] || 0;
+                                                                    if (!v) return null;
+                                                                    return <div key={s} style={{ width: `${(v / totalEtapas * 100)}%`, background: EPS_COLORS[s].bar }} />;
+                                                                })}
+                                                            </div>
+                                                            <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-1">
+                                                                {EPS_ORDER.map(s => {
+                                                                    const v = eps[s] || 0;
+                                                                    if (!v) return null;
+                                                                    const pct = (v / totalEtapas * 100).toFixed(0);
+                                                                    return (
+                                                                        <div key={s} className="flex items-center gap-1.5">
+                                                                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: EPS_COLORS[s].bar }} />
+                                                                            <span className="text-[9px] font-bold text-slate-500 capitalize flex-1 truncate">{s}</span>
+                                                                            <span className={`text-[9px] font-black px-1 py-0.5 rounded ${EPS_COLORS[s].badge}`}>{pct}%</span>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <p className="text-[10px] text-slate-300 font-bold">Nenhuma etapa lançada</p>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 );
                             })}
