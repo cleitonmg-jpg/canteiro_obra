@@ -974,13 +974,25 @@ app.delete('/api/etapas-catalogo/:id', async (req, res) => {
 
 app.get('/api/etapas-obra', async (req, res) => {
   try {
-    const { id_obra } = req.query;
-    if (!id_obra) return res.status(400).json({ erro: 'id_obra é obrigatório' });
+    const { id_obra, data_inicio, data_fim, status } = req.query;
+    const where = {};
+    if (id_obra) where.id_obra = parseInt(id_obra);
+    if (data_inicio || data_fim) {
+      where.data_lancamento = {};
+      if (data_inicio) where.data_lancamento.gte = new Date(data_inicio);
+      if (data_fim) {
+        const fim = new Date(data_fim);
+        fim.setHours(23, 59, 59, 999);
+        where.data_lancamento.lte = fim;
+      }
+    }
+    if (status) where.status_etapa = status;
     res.json(await prisma.tb_etapa_obra.findMany({
-      where: { id_obra: parseInt(id_obra) },
+      where,
       orderBy: { data_lancamento: 'desc' },
       include: {
         tb_etapa_catalogo: { select: { id: true, codigo: true, servico_executado: true } },
+        tb_obra: { select: { id: true, nome: true, responsavel: true, status: true, valor_contratado: true, tb_canteiro: { select: { id: true, nome: true } } } },
       },
     }));
   } catch (err) { res.status(500).json({ erro: err.message }); }
