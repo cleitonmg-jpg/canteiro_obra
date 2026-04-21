@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Building2, RefreshCw, ChevronDown, ChevronRight, Edit2, Trash2, Save, X, Printer, FolderOpen } from 'lucide-react';
+import { TrendingUp, TrendingDown, Building2, RefreshCw, ChevronDown, ChevronRight, Edit2, Trash2, Save, X, Printer, FolderOpen, Layers } from 'lucide-react';
 import { API } from '../config';
 import { formatBRL } from '../utils/format';
 import { DEFAULT_OBRA_FILTRO_STATUS, matchesObraFiltroStatus, OBRA_FILTRO_STATUS_OPTIONS, obraFiltroLabel, type ObraFiltroStatus } from '../utils/obraStatus';
@@ -281,10 +281,17 @@ export const RelatoriosView = () => {
                                                         <td className={`px-6 py-3.5 text-right font-black ${o.lucro >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{fmt(o.lucro)}</td>
                                                         <td className="px-6 py-3.5 text-center text-xs font-black text-slate-500">{o.qtd_lancamentos}</td>
                                                         <td className="px-6 py-3.5">
-                                                            <button onClick={() => window.open(`/relatorio-obra/${o.id}`, '_blank')}
-                                                                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all">
-                                                                <Printer size={12} /> Imprimir
-                                                            </button>
+                                                            <div className="flex gap-2">
+                                                                <button onClick={() => window.open(`/relatorio-obra/${o.id}`, '_blank')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-all">
+                                                                    <Printer size={12} /> Imprimir
+                                                                </button>
+                                                                <button onClick={() => window.open(`/relatorio-executor/${o.id}`, '_blank')}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all"
+                                                                    title="Relatório Executor (Etapas)">
+                                                                    <Layers size={12} /> Executor
+                                                                </button>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -395,13 +402,22 @@ export const RelatoriosView = () => {
                                             <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-black">{d.qtd_lancamentos}</span>
                                         </td>
                                         <td className="px-4 py-5">
-                                            <button
-                                                onClick={e => { e.stopPropagation(); window.open(`/relatorio-obra/${d.id}`, '_blank'); }}
-                                                title="Abrir relatório desta obra"
-                                                className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs transition-all shadow-sm"
-                                            >
-                                                <Printer size={13} /> Imprimir
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={e => { e.stopPropagation(); window.open(`/relatorio-obra/${d.id}`, '_blank'); }}
+                                                    title="Relatório financeiro"
+                                                    className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs transition-all shadow-sm"
+                                                >
+                                                    <Printer size={13} /> Imprimir
+                                                </button>
+                                                <button
+                                                    onClick={e => { e.stopPropagation(); window.open(`/relatorio-executor/${d.id}`, '_blank'); }}
+                                                    title="Relatório Executor (Etapas)"
+                                                    className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-xs transition-all shadow-sm"
+                                                >
+                                                    <Layers size={13} /> Executor
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
 
