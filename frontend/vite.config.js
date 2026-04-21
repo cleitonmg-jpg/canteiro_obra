@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
+
+const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
 const gitHash = (() => {
   try { return execSync('git rev-parse --short HEAD').toString().trim(); }
@@ -15,6 +18,6 @@ const buildDate = new Date().toLocaleDateString('pt-BR', {
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   define: {
-    __APP_BUILD__: JSON.stringify(`${buildDate} #${gitHash}`),
+    __APP_BUILD__: JSON.stringify(`v${pkg.version} | ${buildDate} #${gitHash}`),
   },
 });
