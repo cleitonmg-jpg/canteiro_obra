@@ -578,11 +578,18 @@ export const ObrasView = ({ buscaExterna }: any) => {
                                         {(() => {
                                             const eps = o.etapasPorStatus || {};
                                             const totalEtapas = Object.values(eps).reduce((a, v) => a + v, 0);
+                                            const orc = Number(o.valor_contratado) || 0;
+                                            const pctOrc = orc > 0 ? (totalEtapas / orc * 100) : 0;
                                             return (
                                                 <div className="mt-3 pt-3 border-t-2 border-dashed border-slate-200 space-y-2">
                                                     <div className="flex justify-between items-center">
                                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Etapas a Receber</p>
-                                                        <p className="text-[10px] font-black text-slate-700">{totalEtapas > 0 ? fmt(totalEtapas) : '—'}</p>
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] font-black text-slate-700">{totalEtapas > 0 ? fmt(totalEtapas) : '—'}</p>
+                                                            {totalEtapas > 0 && orc > 0 && (
+                                                                <p className="text-[9px] font-black text-blue-500">{pctOrc.toFixed(1)}% do orçamento</p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     {totalEtapas > 0 ? (
                                                         <>
@@ -598,11 +605,13 @@ export const ObrasView = ({ buscaExterna }: any) => {
                                                                     const v = eps[s] || 0;
                                                                     if (!v) return null;
                                                                     const pct = (v / totalEtapas * 100).toFixed(0);
+                                                                    const pctDeOrc = orc > 0 ? (v / orc * 100).toFixed(1) : null;
                                                                     return (
                                                                         <div key={s} className="flex items-center gap-1.5">
                                                                             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: EPS_COLORS[s].bar }} />
                                                                             <span className="text-[9px] font-bold text-slate-500 capitalize flex-1 truncate">{s}</span>
                                                                             <span className={`text-[9px] font-black px-1 py-0.5 rounded ${EPS_COLORS[s].badge}`}>{pct}%</span>
+                                                                            {pctDeOrc && <span className="text-[9px] font-bold text-slate-400">{pctDeOrc}%orç</span>}
                                                                         </div>
                                                                     );
                                                                 })}
